@@ -1,0 +1,91 @@
+# 国奖任务统一配置（避免硬编码）
+# 高价值属性列（勘探价值导向，融合时赋更高权重）
+high_value_attrs:
+  - "Connections per Branch"
+  - "Connections per Trace"
+  - "Connection Frequency"
+
+# 环境与复现说明
+environment:
+  python_recommended: "3.10"
+  python_supported: ">=3.9,<3.13"
+  fractopo_tested: "0.9.x"
+  notes: "推荐使用 environment.yml 或 requirements.txt 安装；GUI/ML 功能在 Python 3.10/3.11 更稳。"
+
+# 日志
+logging:
+  level: "INFO"
+  file: "logs/pipeline.log"
+
+# 网格导出
+export_grid:
+  cell_width: 750.0
+  out_csv: true
+  out_gpkg: true
+  gpkg_layer: "grid_topology"
+
+# 聚类/降维
+clustering:
+  n_clusters: 4
+  random_state: 42
+  k_search_min: 2
+  k_search_max: 12
+  pca_components: 2
+  umap_components: 2
+  umap_neighbors: 15
+  ae_latent: 2
+  ae_epochs: 100
+  vae_latent: 2
+  vae_epochs: 150
+
+# 特征工程
+feature_engineering:
+  normalize_method: "standard"   # standard | minmax
+  outlier_method: "iqr"         # iqr | zscore
+  variance_threshold: 1.0e-6
+  n_select_mi: 10               # 互信息筛选 TopK，null 表示不筛
+
+# 融合
+fusion:
+  high_value_weight: 1.5
+  export_cluster_csv: true
+  export_cluster_gpkg: true
+  export_fusion_csv: true
+
+# 训练与验证
+train:
+  n_splits: 5
+  test_size: 0.1
+  random_state: 42
+  # 多个随机种子下重复「划分+测试集评估」用于观察 R² 波动（不改变主模型保存用的 random_state）
+  stability_seeds: [42, 43, 44, 45, 46]
+  target_column: "Fracture Intensity B21"
+  baseline_models:
+    - "linear_regression"
+    - "random_forest"
+    - "xgboost"
+  random_forest:
+    n_estimators: 200
+    max_depth: 8
+  export_predictions_csv: true
+  export_predictions_gpkg: true
+  prediction_interval_sigma: 1.96
+  conformal_alpha: 0.1
+  spatial_cv_blocks: 9
+
+# 调参（Optuna）
+tune:
+  n_trials: 30
+  timeout_minutes: 30
+
+# 可解释性
+explain:
+  export_shap_csv: true
+  top_n_features: 10
+
+# 行业指标（示例，可替换为实际测算）
+industry:
+  time_baseline: 10.0   # 传统分析耗时（小时）
+  time_fusion: 4.0
+  cost_baseline: 1.0
+  cost_optimized: 0.8

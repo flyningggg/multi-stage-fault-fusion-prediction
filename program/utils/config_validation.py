@@ -1,0 +1,56 @@
+from __future__ import annotations
+
+from typing import Dict, List, Any
+
+
+def _is_num(v: Any) -> bool:
+    return isinstance(v, (int, float))
+
+
+def validate_config(cfg: Dict[str, Any]) -> List[str]:
+    """
+    返回配置错误列表（空列表表示通过）。
+    只做关键约束，避免运行中途才报错。
+    """
+    errors: List[str] = []
+    if not isinstance(cfg, dict):
+        return ["config.yaml 顶层必须是映射（dict）。"]
+
+    train = cfg.get("train") or {}
+    clustering = cfg.get("clustering") or {}
+    export_grid = cfg.get("export_grid") or {}
+
+    if not _is_num(export_grid.get("cell_width", 0)) or float(export_grid.get("cell_width", 0)) <= 0:
+        errors.append("export_grid.cell_width 必须为正数。")
+
+    if not isinstance(clustering.get("n_clusters", 0), int) or int(clustering.get("n_clusters", 0)) < 2:
+        errors.append("clustering.n_clusters 必须为整数且 >= 2。")
+
+    k_min = clustering.get("k_search_min", 2)
+    k_max = clustering.get("k_search_max", 12)
+    if not isinstance(k_min, int) or not isinstance(k_max, int) or k_min < 2 or k_max <= k_min:
+        errors.append("clustering.k_search_min / k_search_max 配置无效（要求 k_max > k_min >= 2）。")
+
+    ts = float(train.get("test_size", 0.1)) if _is_num(train.get("test_size", 0.1)) else -1
+    if ts <= 0 or ts >= 0.5:
+        errors.append("train.test_size 建议在 (0, 0.5) 范围内。")
+
+    alpha = float(train.get("conformal_alpha", 0.1)) if _is_num(train.get("conformal_alpha", 0.1)) else -1
+    if alpha <= 0 or alpha >= 1:
+        errors.append("train.conformal_alpha 必须在 (0, 1) 区间。")
+
+    blocks = train.get("spatial_cv_blocks", 9)
+    if not isinstance(blocks, int) or blocks < 4:
+        errors.append("train.spatial_cv_blocks 建议为整数且 >= 4。")
+
+    seeds = train.get("stability_seeds")
+    if seeds is not None:
+        if not isinstance(seeds, list) or not all(isinstance(s, int) for s in seeds):
+            errors.append("train.stability_seeds 必须为整数列表。")
+
+    target = train.get("target_column")
+    if target is not None and not isinstance(target, str):
+        errors.append("train.target_column 必须为字符串。")
+
+    return errors
+

@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Cache
+.cache/
+*.cache
+
+# Data outputs (regeneratable)
+program/data/processed/
+program/data/multiperiod_results/
+
+# Temporary files
+tmp_zip/
+*.tmp
+*.bak
+
+# Large data files (optional - uncomment if needed)
+# program/*.csv
+# program/**/*.geojson
+# program/**/*.dat
