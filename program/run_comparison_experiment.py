@@ -361,3 +361,94 @@ if __name__ == "__main__":
             sys.exit(1)
 
     run_all(csv_path, target_column=args.target, skip_gat=args.skip_gat)
+
+
+# ─────────────────────────── 三期融合对比 ───────────────────────────
+
+
+def run_three_period_fusion_comparison(period_gdfs: dict, out_dir: str = None) -> dict:
+    """
+    运行三期融合方法对比实验。
+
+    参数：
+        period_gdfs: {"海西期": gdf, "喜山期": gdf, "印支燕山期": gdf}
+        out_dir: 输出目录
+
+    返回：
+        dict: {period_name: {'weighted': scores, 'pca': scores, ...}}
+    """
+    from multiperiod_data import get_topology_matrix
+    from sklearn.decomposition import PCA
+    from sklearn.preprocessing import StandardScaler
+    import numpy as np
+
+    if out_dir:
+        os.makedirs(out_dir, exist_ok=True)
+
+    results = {}
+
+    for period_name, gdf in period_gdfs.items():
+        _, X, cols = get_topology_matrix(gdf)
+        nonzero = np.array(X.sum(axis=1)).ravel() > 0
+        X_nz = X[nonzero]
+
+        if len(X_nz) < 10:
+            continue
+
+        # 标准化
+        scaler = StandardScaler()
+        X_scaled = scaler.fit_transform(X_nz)
+
+        # PCA融合
+        pca = PCA(n_components=1)
+        pca_scores = pca.fit_transform(X_scaled).ravel()
+
+        # 加权融合（使用默认权重）
+        weights = np.ones(len(cols)) / len(cols)
+        weighted_scores = X_scaled @ weights
+
+        # 计算统计信息
+        results[period_name] = {
+            'pca': {
+                'mean': pca_scores.mean(),
+                'std': pca_scores.std(),
+                'min': pca_scores.min(),
+                'max': pca_scores.max(),
+                'explained_variance': pca.explained_variance_ratio_[0],
+            },
+            'weighted': {
+                'mean': weighted_scores.mean(),
+                'std': weighted_scores.std(),
+                'min': weighted_scores.min(),
+                'max': weighted_scores.max(),
+            },
+            'nonzero_count': len(X_nz),
+            'total_count': len(gdf),
+        }
+
+        # 生成对比图
+        if out_dir:
+            fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+
+            # PCA得分分布
+            axes[0].hist(pca_scores, bins=30, color='#457B9D', alpha=0.7, edgecolor='white')
+            axes[0].set_xlabel('PCA得分')
+            axes[0].set_ylabel('频次')
+            axes[0].set_title(f'{period_name} PCA融合得分分布')
+            axes[0].grid(True, alpha=0.3)
+
+            # 加权得分分布
+            axes[1].hist(weighted_scores, bins=30, color='#E63946', alpha=0.7, edgecolor='white')
+            axes[1].set_xlabel('加权得分')
+            axes[1].set_ylabel('频次')
+            axes[1].set_title(f'{period_name} 加权融合得分分布')
+            axes[1].grid(True, alpha=0.3)
+
+            plt.suptitle(f'{period_name} 融合方法对比', fontsize=14, fontweight='bold')
+            plt.tight_layout()
+
+            out_path = os.path.join(out_dir, f'fusion_comparison_{period_name}.png')
+            plt.savefig(out_path, dpi=150, bbox_inches='tight')
+            plt.close(fig)
+
+    return results

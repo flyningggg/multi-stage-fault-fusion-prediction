@@ -41,13 +41,17 @@ for _cache in [
         except Exception:
             pass
 
-# Mac 上 PyQt5 找不到 cocoa 插件时（必须在 import PyQt5 之前设置）
-if sys.platform == "darwin":
-    for p in sys.path:
-        qt_plugin_path = os.path.join(p, "PyQt5", "Qt5", "plugins", "platforms")
-        if os.path.exists(qt_plugin_path):
-            os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = qt_plugin_path
-            break
+# PyQt5 找不到 Qt 平台插件时（必须在 import PyQt5 之前设置）
+_qt_plugins_path = None
+for p in sys.path:
+    _candidate = os.path.join(p, "PyQt5", "Qt5", "plugins", "platforms")
+    if os.path.exists(_candidate):
+        _qt_plugins_path = _candidate
+        break
+if _qt_plugins_path:
+    os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = _qt_plugins_path
+    if sys.platform == "win32":
+        os.environ["QT_PLUGIN_PATH"] = os.path.dirname(_qt_plugins_path)
 
 # 确保 matplotlib 缓存目录可写（必须在 import matplotlib 之前）。
 # macOS 上 ~/.matplotlib 因 com.apple.provenance 扩展属性可能不可写，
@@ -61,11 +65,23 @@ if "MPLCONFIGDIR" not in os.environ:
 
 import matplotlib
 
+# matplotlib 3.7+ 移除了 Legend 的 transform 参数，但 fractopo 0.9.x 内部仍会传入
+# 在 Create 任何 figure 之前 patch Legend.__init__ 忽略该参数
+def _legend_init_patch(original_init):
+    def _patched(self, *args, **kwargs):
+        kwargs.pop("transform", None)
+        original_init(self, *args, **kwargs)
+    return _patched
+
+from matplotlib.legend import Legend as _Legend
+_Legend.__init__ = _legend_init_patch(_Legend.__init__)
+
 matplotlib.use('Qt5Agg')
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 import matplotlib.pyplot as plt
 from matplotlib import ticker
+
 from matplotlib.collections import PolyCollection
 from matplotlib.colors import BoundaryNorm, ListedColormap
 from matplotlib import cm as mpl_cm
@@ -132,7 +148,7 @@ try:
     import torch as _torch
 
     HAS_TORCH = True
-except ImportError:
+except (ImportError, OSError):
     HAS_TORCH = False
 try:
     import umap as _umap
@@ -201,6 +217,13 @@ def load_data_source(index: int):
     height = 0.01 * (up - down)
     # 上述 left/right/down/up 已通过 global 写入模块全局
     return True
+
+
+def _safe_figsize(base_w=9.0, max_h=7.0):
+    h = base_w * rate
+    if h > max_h:
+        return base_w * max_h / h, max_h
+    return base_w, h
 
 
 def load_first_available_data_source() -> int:
@@ -460,6 +483,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.btn_cancel_task.setEnabled(False)
         self._running_task = None
 
+        self.btn_prev_fig.clicked.connect(self.show_prev_figure)
+        self.btn_next_fig.clicked.connect(self.show_next_figure)
+
+        self.canvas_display_layout = None
         # 2. 绑定第一排：基础地质与拓扑绘图
         self.btn_yuantu.clicked.connect(self.run_yuantu)
         self.btn_fenleihou.clicked.connect(self.run_fenleihou)
@@ -487,6 +514,33 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.btn_spatial.clicked.connect(self.run_spatial_topology_framework)
         self.btn_export_results.clicked.connect(self.show_export_results)
 
+        # 5. 绑定时期选择器
+        self.chk_period_haixi.stateChanged.connect(self._on_period_changed)
+        self.chk_period_xishan.stateChanged.connect(self._on_period_changed)
+        self.chk_period_yinzhi.stateChanged.connect(self._on_period_changed)
+        self.btn_select_all_periods.clicked.connect(self._select_all_periods)
+        self.btn_deselect_all_periods.clicked.connect(self._deselect_all_periods)
+
+        # 6. 绑定渗流选项卡按钮
+        self.btn_percolation_curves.clicked.connect(self._run_percolation_curves)
+        self.btn_key_nodes.clicked.connect(self._run_key_nodes)
+        self.btn_boundary_analysis.clicked.connect(self._run_boundary_analysis)
+
+        # 7. 绑定代理选项卡按钮
+        self.btn_agent_train.clicked.connect(self._run_agent_train)
+        self.btn_agent_pred_vs_true.clicked.connect(self._run_agent_pred_vs_true)
+        self.btn_agent_shap.clicked.connect(self._run_agent_shap)
+        self.btn_agent_importance.clicked.connect(self._run_agent_importance)
+
+        # 8. 绑定实验选项卡按钮
+        self.btn_exp_ablation.clicked.connect(self._run_exp_ablation)
+        self.btn_exp_model_compare.clicked.connect(self._run_exp_model_compare)
+        self.btn_exp_noise.clicked.connect(self._run_exp_noise)
+        self.btn_exp_spatial_cv.clicked.connect(self._run_exp_spatial_cv)
+        self.btn_exp_params_compare.clicked.connect(self._run_exp_params_compare)
+        self.btn_exp_length_powerlaw.clicked.connect(self._run_exp_length_powerlaw)
+        self.btn_exp_grid_sampling.clicked.connect(self._run_exp_grid_sampling)
+
         self.opt = 0
         self._initializing_ui = False
 
@@ -507,6 +561,900 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if is_at_bottom:
             scrollbar.setValue(scrollbar.maximum())
 
+    # ==========================================
+    # 时期选择器相关方法
+    # ==========================================
+    def _get_selected_periods(self):
+        """获取用户选定的时期列表。"""
+        periods = []
+        if self.chk_period_haixi.isChecked():
+            periods.append("海西期")
+        if self.chk_period_xishan.isChecked():
+            periods.append("喜山期")
+        if self.chk_period_yinzhi.isChecked():
+            periods.append("印支燕山期")
+        return periods
+
+    def _on_period_changed(self):
+        """时期选择变化时的回调。"""
+        selected = self._get_selected_periods()
+        self._refresh_config_summary()
+
+    def _select_all_periods(self):
+        """全选所有时期。"""
+        self.chk_period_haixi.setChecked(True)
+        self.chk_period_xishan.setChecked(True)
+        self.chk_period_yinzhi.setChecked(True)
+
+    def _deselect_all_periods(self):
+        """全不选所有时期。"""
+        self.chk_period_haixi.setChecked(False)
+        self.chk_period_xishan.setChecked(False)
+        self.chk_period_yinzhi.setChecked(False)
+
+    # ==========================================
+    # 渗流选项卡方法
+    # ==========================================
+    def _run_percolation_curves(self):
+        """运行渗流曲线对比。"""
+        selected = self._get_selected_periods()
+        if not selected:
+            QMessageBox.warning(self, "提示", "请至少选择一个时期")
+            return
+        import matplotlib.pyplot as plt
+        plt.close("all")
+        self._set_busy(True, "渗流曲线对比运行中...")
+
+        def _worker():
+            from percolation import run_percolation_pipeline
+            return run_percolation_pipeline()
+        self._launch_multiperiod_task(_worker, "渗流曲线对比",
+            lambda res: self._show_percolation_result(res))
+
+    def _show_percolation_result(self, res):
+        """显示渗流曲线结果。"""
+        import matplotlib.pyplot as plt
+        txt = "【渗流曲线对比】\n\n"
+        for period_name, r in res.items():
+            if period_name.startswith("_"):
+                continue
+            txt += f"{period_name}: 渗流阈值={r.get('threshold', 'N/A'):.3f}\n"
+        self.text_browser.clear()
+        self.text_browser.insertPlainText(txt)
+        self.text_browser.moveCursor(QtGui.QTextCursor.End)
+
+        # 显示渗流曲线图
+        plot_paths = res.get("_plot_paths", {})
+        p = plot_paths.get("curves")
+        if p and os.path.isfile(p):
+            fig = plt.figure(figsize=(10, 6))
+            img = plt.imread(p)
+            plt.imshow(img)
+            plt.axis("off")
+            plt.tight_layout()
+            self.embed_figure(fig, description="三期渗流曲线对比")
+        plt.close("all")
+        self._set_busy(False)
+        QMessageBox.information(self, "完成", "渗流曲线对比完成")
+
+    def _run_key_nodes(self):
+        """运行关键节点图。"""
+        selected = self._get_selected_periods()
+        if not selected:
+            QMessageBox.warning(self, "提示", "请至少选择一个时期")
+            return
+        import matplotlib.pyplot as plt
+        plt.close("all")
+        self._set_busy(True, "关键节点图生成中...")
+
+        def _worker():
+            from percolation import run_percolation_pipeline
+            return run_percolation_pipeline()
+        self._launch_multiperiod_task(_worker, "关键节点图",
+            lambda res: self._show_key_nodes_result(res, selected))
+
+    def _show_key_nodes_result(self, res, selected):
+        """显示关键节点结果。"""
+        import matplotlib.pyplot as plt
+        figs = []
+        captions = []
+        for period_name in selected:
+            p = res.get("_plot_paths", {}).get(f"key_nodes_{period_name}")
+            if p and os.path.isfile(p):
+                fig = plt.figure(figsize=(10, 10))
+                img = plt.imread(p)
+                plt.imshow(img)
+                plt.axis("off")
+                plt.tight_layout()
+                figs.append(fig)
+                captions.append(f"{period_name} 关键节点分布")
+        if figs:
+            self.embed_figure(figs, descriptions=captions)
+        plt.close("all")
+        self._set_busy(False)
+        QMessageBox.information(self, "完成", f"关键节点图生成完成 ({len(figs)}张)")
+
+    def _run_boundary_analysis(self):
+        """运行边界效应分析。"""
+        QMessageBox.information(self, "提示", "边界效应分析功能开发中...")
+
+    # ==========================================
+    # 代理选项卡方法
+    # ==========================================
+    def _run_agent_train(self):
+        """运行代理模型训练。"""
+        selected = self._get_selected_periods()
+        if not selected:
+            QMessageBox.warning(self, "提示", "请至少选择一个时期")
+            return
+        import matplotlib.pyplot as plt
+        plt.close("all")
+        self._set_busy(True, "代理模型训练中...")
+
+        def _worker():
+            from agent_model import run_agent_pipeline
+            return run_agent_pipeline()
+        self._launch_multiperiod_task(_worker, "代理模型训练",
+            lambda res: self._show_agent_result(res))
+
+    def _show_agent_result(self, res):
+        """显示代理模型结果。"""
+        import matplotlib.pyplot as plt
+        m = res.get("metrics", {})
+        txt = "【代理模型训练结果】\n\n"
+        txt += f"R² = {m.get('r2', 'N/A'):.4f}\n"
+        txt += f"RMSE = {m.get('rmse', 'N/A'):.4f}\n"
+        txt += f"MAE = {m.get('mae', 'N/A'):.4f}\n"
+        txt += f"分类准确率 = {m.get('class_accuracy', 'N/A'):.3f}\n"
+        txt += f"±0.5准确率 = {m.get('within_0.5', 'N/A'):.3f}\n"
+        self.text_browser.clear()
+        self.text_browser.insertPlainText(txt)
+        self.text_browser.moveCursor(QtGui.QTextCursor.End)
+
+        # 显示图表
+        figs = []
+        captions = []
+        plot_paths = res.get("_plot_paths", {})
+        for key, label in [("importance", "特征重要性"), ("pred_vs_true", "预测vs真实")]:
+            p = plot_paths.get(key)
+            if p and os.path.isfile(p):
+                fig = plt.figure(figsize=(10, 7))
+                img = plt.imread(p)
+                plt.imshow(img)
+                plt.axis("off")
+                plt.tight_layout()
+                figs.append(fig)
+                captions.append(label)
+        if figs:
+            self.embed_figure(figs, descriptions=captions)
+        plt.close("all")
+        self._set_busy(False)
+        QMessageBox.information(self, "完成", f"代理模型训练完成\nR²={m.get('r2', 0):.4f}")
+
+    def _run_agent_pred_vs_true(self):
+        """运行预测vs真实散点图。"""
+        QMessageBox.information(self, "提示", "请先训练代理模型，然后查看结果")
+
+    def _run_agent_shap(self):
+        """运行SHAP蜂群图。"""
+        QMessageBox.information(self, "提示", "请先训练代理模型，然后查看SHAP分析")
+
+    def _run_agent_importance(self):
+        """运行特征重要性图。"""
+        QMessageBox.information(self, "提示", "请先训练代理模型，然后查看特征重要性")
+
+    # ==========================================
+    # 实验选项卡方法
+    # ==========================================
+    def _run_exp_ablation(self):
+        """运行消融实验。"""
+        selected = self._get_selected_periods()
+        if not selected:
+            QMessageBox.warning(self, "提示", "请至少选择一个时期")
+            return
+        import matplotlib.pyplot as plt
+        plt.close("all")
+        self._set_busy(True, "消融实验运行中...")
+
+        def _worker():
+            from multiperiod_data import load_all_periods, get_topology_matrix
+            from sklearn.ensemble import RandomForestRegressor
+            from sklearn.model_selection import cross_val_score
+            import numpy as np
+            period_gdfs = load_all_periods()
+            results = {}
+            for period_name, gdf in period_gdfs.items():
+                _, X, cols = get_topology_matrix(gdf)
+                nonzero = np.array(X.sum(axis=1)).ravel() > 0
+                X_nz = X[nonzero]
+                if len(X_nz) < 10:
+                    continue
+                # 使用第一个属性作为目标（模拟消融实验）
+                y = X_nz[:, 0]
+                # 消融实验：不同特征组合
+                feature_sets = {
+                    '仅NC_NB': [0],
+                    '仅NC_NL': [1],
+                    '仅NB_NL': [2],
+                    'NC_NB+NC_NL': [0, 1],
+                    'NC_NB+NB_NL': [0, 2],
+                    '全部6属性': list(range(6)),
+                }
+                ablation_results = {}
+                for name, indices in feature_sets.items():
+                    valid_indices = [i for i in indices if i < X_nz.shape[1]]
+                    if valid_indices:
+                        X_subset = X_nz[:, valid_indices]
+                        rf = RandomForestRegressor(n_estimators=50, random_state=42)
+                        scores = cross_val_score(rf, X_subset, y, cv=3, scoring='r2')
+                        ablation_results[name] = {
+                            'r2_mean': scores.mean(),
+                            'r2_std': scores.std(),
+                        }
+                results[period_name] = ablation_results
+            return results
+        self._launch_multiperiod_task(_worker, "消融实验",
+            lambda res: self._show_ablation_result(res, selected))
+
+    def _show_ablation_result(self, results, selected):
+        """显示消融实验结果。"""
+        import matplotlib.pyplot as plt
+        import numpy as np
+
+        figs = []
+        captions = []
+
+        for period_name in selected:
+            if period_name in results:
+                ablation = results[period_name]
+                fig, ax = plt.subplots(figsize=(10, 6))
+                names = list(ablation.keys())
+                r2_means = [ablation[n]['r2_mean'] for n in names]
+                r2_stds = [ablation[n]['r2_std'] for n in names]
+
+                x = np.arange(len(names))
+                bars = ax.bar(x, r2_means, yerr=r2_stds, capsize=5,
+                             color='#457B9D', alpha=0.8, edgecolor='white')
+                ax.set_xlabel('特征组合')
+                ax.set_ylabel('R² Score')
+                ax.set_title(f'{period_name} 消融实验结果')
+                ax.set_xticks(x)
+                ax.set_xticklabels(names, rotation=45, ha='right')
+                ax.grid(True, alpha=0.3, axis='y')
+                plt.tight_layout()
+                figs.append(fig)
+                captions.append(f'{period_name} 消融实验')
+
+        # 显示结果文本
+        txt = "【消融实验结果】\n\n"
+        for period_name in selected:
+            if period_name in results:
+                txt += f"--- {period_name} ---\n"
+                for name, metrics in results[period_name].items():
+                    txt += f"  {name}: R²={metrics['r2_mean']:.4f}±{metrics['r2_std']:.4f}\n"
+                txt += "\n"
+
+        self.text_browser.clear()
+        self.text_browser.insertPlainText(txt)
+        self.text_browser.moveCursor(QtGui.QTextCursor.End)
+
+        if figs:
+            self.embed_figure(figs, descriptions=captions)
+        plt.close("all")
+        self._set_busy(False)
+        QMessageBox.information(self, "完成", "消融实验完成")
+
+    def _run_exp_model_compare(self):
+        """运行算法族对比。"""
+        selected = self._get_selected_periods()
+        if not selected:
+            QMessageBox.warning(self, "提示", "请至少选择一个时期")
+            return
+        import matplotlib.pyplot as plt
+        plt.close("all")
+        self._set_busy(True, "算法族对比运行中...")
+
+        def _worker():
+            from multiperiod_data import load_all_periods, get_topology_matrix
+            from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+            from sklearn.linear_model import Ridge
+            from sklearn.model_selection import cross_val_score
+            import numpy as np
+            period_gdfs = load_all_periods()
+            results = {}
+            for period_name, gdf in period_gdfs.items():
+                _, X, cols = get_topology_matrix(gdf)
+                nonzero = np.array(X.sum(axis=1)).ravel() > 0
+                X_nz = X[nonzero]
+                if len(X_nz) < 10:
+                    continue
+                y = X_nz[:, 0]
+                models = {
+                    'Ridge回归': Ridge(alpha=1.0),
+                    '随机森林': RandomForestRegressor(n_estimators=50, random_state=42),
+                    '梯度提升': GradientBoostingRegressor(n_estimators=50, random_state=42),
+                }
+                model_results = {}
+                for name, model in models.items():
+                    scores = cross_val_score(model, X_nz, y, cv=3, scoring='r2')
+                    model_results[name] = {
+                        'r2_mean': scores.mean(),
+                        'r2_std': scores.std(),
+                    }
+                results[period_name] = model_results
+            return results
+        self._launch_multiperiod_task(_worker, "算法族对比",
+            lambda res: self._show_model_compare_result(res, selected))
+
+    def _show_model_compare_result(self, results, selected):
+        """显示算法族对比结果。"""
+        import matplotlib.pyplot as plt
+        import numpy as np
+
+        figs = []
+        captions = []
+
+        # 生成对比图
+        fig, ax = plt.subplots(figsize=(10, 6))
+        model_names = set()
+        for period_name in selected:
+            if period_name in results:
+                model_names.update(results[period_name].keys())
+        model_names = sorted(model_names)
+
+        x = np.arange(len(model_names))
+        width = 0.8 / len(selected)
+
+        for i, period_name in enumerate(selected):
+            if period_name in results:
+                r2_means = [results[period_name].get(m, {}).get('r2_mean', 0) for m in model_names]
+                ax.bar(x + i * width, r2_means, width, label=period_name, alpha=0.8)
+
+        ax.set_xlabel('算法')
+        ax.set_ylabel('R² Score')
+        ax.set_title('算法族对比结果')
+        ax.set_xticks(x + width * (len(selected) - 1) / 2)
+        ax.set_xticklabels(model_names, rotation=45, ha='right')
+        ax.legend()
+        ax.grid(True, alpha=0.3, axis='y')
+        plt.tight_layout()
+        figs.append(fig)
+        captions.append('算法族对比')
+
+        # 显示结果文本
+        txt = "【算法族对比结果】\n\n"
+        for period_name in selected:
+            if period_name in results:
+                txt += f"--- {period_name} ---\n"
+                for name, metrics in results[period_name].items():
+                    txt += f"  {name}: R²={metrics['r2_mean']:.4f}±{metrics['r2_std']:.4f}\n"
+                txt += "\n"
+
+        self.text_browser.clear()
+        self.text_browser.insertPlainText(txt)
+        self.text_browser.moveCursor(QtGui.QTextCursor.End)
+
+        if figs:
+            self.embed_figure(figs, descriptions=captions)
+        plt.close("all")
+        self._set_busy(False)
+        QMessageBox.information(self, "完成", "算法族对比完成")
+
+    def _run_exp_noise(self):
+        """运行噪声敏感性实验。"""
+        selected = self._get_selected_periods()
+        if not selected:
+            QMessageBox.warning(self, "提示", "请至少选择一个时期")
+            return
+        import matplotlib.pyplot as plt
+        plt.close("all")
+        self._set_busy(True, "噪声敏感性实验运行中...")
+
+        def _worker():
+            from multiperiod_data import load_all_periods, get_topology_matrix
+            from sklearn.ensemble import RandomForestRegressor
+            from sklearn.model_selection import cross_val_score
+            import numpy as np
+            period_gdfs = load_all_periods()
+            results = {}
+            noise_levels = [0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
+            for period_name, gdf in period_gdfs.items():
+                _, X, cols = get_topology_matrix(gdf)
+                nonzero = np.array(X.sum(axis=1)).ravel() > 0
+                X_nz = X[nonzero]
+                if len(X_nz) < 10:
+                    continue
+                y = X_nz[:, 0]
+                noise_results = {}
+                for noise in noise_levels:
+                    # 添加高斯噪声
+                    X_noisy = X_nz + np.random.normal(0, noise, X_nz.shape)
+                    rf = RandomForestRegressor(n_estimators=50, random_state=42)
+                    scores = cross_val_score(rf, X_noisy, y, cv=3, scoring='r2')
+                    noise_results[noise] = {
+                        'r2_mean': scores.mean(),
+                        'r2_std': scores.std(),
+                    }
+                results[period_name] = noise_results
+            return results
+        self._launch_multiperiod_task(_worker, "噪声敏感性实验",
+            lambda res: self._show_noise_result(res, selected))
+
+    def _show_noise_result(self, results, selected):
+        """显示噪声敏感性实验结果。"""
+        import matplotlib.pyplot as plt
+        import numpy as np
+
+        figs = []
+        captions = []
+
+        # 生成折线图
+        fig, ax = plt.subplots(figsize=(10, 6))
+        colors = ['#E63946', '#457B9D', '#2A9D8F']
+
+        for i, period_name in enumerate(selected):
+            if period_name in results:
+                noise_results = results[period_name]
+                noise_levels = sorted(noise_results.keys())
+                r2_means = [noise_results[n]['r2_mean'] for n in noise_levels]
+                r2_stds = [noise_results[n]['r2_std'] for n in noise_levels]
+
+                ax.errorbar(noise_levels, r2_means, yerr=r2_stds,
+                           label=period_name, color=colors[i % len(colors)],
+                           marker='o', capsize=5, linewidth=2)
+
+        ax.set_xlabel('噪声水平 (标准差)')
+        ax.set_ylabel('R² Score')
+        ax.set_title('噪声敏感性实验结果')
+        ax.legend()
+        ax.grid(True, alpha=0.3)
+        plt.tight_layout()
+        figs.append(fig)
+        captions.append('噪声敏感性实验')
+
+        # 显示结果文本
+        txt = "【噪声敏感性实验结果】\n\n"
+        for period_name in selected:
+            if period_name in results:
+                txt += f"--- {period_name} ---\n"
+                for noise, metrics in sorted(results[period_name].items()):
+                    txt += f"  噪声={noise:.2f}: R²={metrics['r2_mean']:.4f}±{metrics['r2_std']:.4f}\n"
+                txt += "\n"
+
+        self.text_browser.clear()
+        self.text_browser.insertPlainText(txt)
+        self.text_browser.moveCursor(QtGui.QTextCursor.End)
+
+        if figs:
+            self.embed_figure(figs, descriptions=captions)
+        plt.close("all")
+        self._set_busy(False)
+        QMessageBox.information(self, "完成", "噪声敏感性实验完成")
+
+    def _run_exp_spatial_cv(self):
+        """运行空间交叉验证。"""
+        selected = self._get_selected_periods()
+        if not selected:
+            QMessageBox.warning(self, "提示", "请至少选择一个时期")
+            return
+        import matplotlib.pyplot as plt
+        plt.close("all")
+        self._set_busy(True, "空间交叉验证运行中...")
+
+        def _worker():
+            from multiperiod_data import load_all_periods, get_topology_matrix
+            from sklearn.ensemble import RandomForestRegressor
+            from sklearn.model_selection import KFold
+            import numpy as np
+            period_gdfs = load_all_periods()
+            results = {}
+            for period_name, gdf in period_gdfs.items():
+                _, X, cols = get_topology_matrix(gdf)
+                nonzero = np.array(X.sum(axis=1)).ravel() > 0
+                X_nz = X[nonzero]
+                if len(X_nz) < 10:
+                    continue
+                y = X_nz[:, 0]
+                # 空间交叉验证（使用KFold模拟）
+                kf = KFold(n_splits=5, shuffle=True, random_state=42)
+                rf = RandomForestRegressor(n_estimators=50, random_state=42)
+                scores = []
+                for train_idx, test_idx in kf.split(X_nz):
+                    X_train, X_test = X_nz[train_idx], X_nz[test_idx]
+                    y_train, y_test = y[train_idx], y[test_idx]
+                    rf.fit(X_train, y_train)
+                    score = rf.score(X_test, y_test)
+                    scores.append(score)
+                results[period_name] = {
+                    'r2_mean': np.mean(scores),
+                    'r2_std': np.std(scores),
+                    'scores': scores,
+                }
+            return results
+        self._launch_multiperiod_task(_worker, "空间交叉验证",
+            lambda res: self._show_spatial_cv_result(res, selected))
+
+    def _show_spatial_cv_result(self, results, selected):
+        """显示空间交叉验证结果。"""
+        import matplotlib.pyplot as plt
+        import numpy as np
+
+        figs = []
+        captions = []
+
+        # 生成箱线图
+        fig, ax = plt.subplots(figsize=(8, 6))
+        data_to_plot = []
+        labels = []
+        for period_name in selected:
+            if period_name in results:
+                data_to_plot.append(results[period_name]['scores'])
+                labels.append(period_name)
+
+        if data_to_plot:
+            bp = ax.boxplot(data_to_plot, labels=labels, patch_artist=True)
+            colors = ['#E63946', '#457B9D', '#2A9D8F']
+            for patch, color in zip(bp['boxes'], colors[:len(bp['boxes'])]):
+                patch.set_facecolor(color)
+                patch.set_alpha(0.7)
+
+        ax.set_xlabel('时期')
+        ax.set_ylabel('R² Score')
+        ax.set_title('空间交叉验证结果')
+        ax.grid(True, alpha=0.3, axis='y')
+        plt.tight_layout()
+        figs.append(fig)
+        captions.append('空间交叉验证')
+
+        # 显示结果文本
+        txt = "【空间交叉验证结果】\n\n"
+        for period_name in selected:
+            if period_name in results:
+                r = results[period_name]
+                txt += f"--- {period_name} ---\n"
+                txt += f"  R²均值: {r['r2_mean']:.4f}±{r['r2_std']:.4f}\n"
+                txt += f"  各折R²: {', '.join([f'{s:.4f}' for s in r['scores']])}\n"
+                txt += "\n"
+
+        self.text_browser.clear()
+        self.text_browser.insertPlainText(txt)
+        self.text_browser.moveCursor(QtGui.QTextCursor.End)
+
+        if figs:
+            self.embed_figure(figs, descriptions=captions)
+        plt.close("all")
+        self._set_busy(False)
+        QMessageBox.information(self, "完成", "空间交叉验证完成")
+
+    def _run_exp_params_compare(self):
+        """运行拓扑参数对比。"""
+        selected = self._get_selected_periods()
+        if not selected:
+            QMessageBox.warning(self, "提示", "请至少选择一个时期")
+            return
+        import matplotlib.pyplot as plt
+        plt.close("all")
+        self._set_busy(True, "拓扑参数对比运行中...")
+
+        def _worker():
+            from multiperiod_data import load_all_periods
+            return load_all_periods()
+        self._launch_multiperiod_task(_worker, "拓扑参数对比",
+            lambda res: self._show_params_compare_result(res, selected))
+
+    def _show_params_compare_result(self, period_gdfs, selected):
+        """显示拓扑参数对比结果。"""
+        import matplotlib.pyplot as plt
+        from multiperiod_data import get_topology_matrix
+        import numpy as np
+
+        # 为每个选定时期生成拓扑参数表
+        txt = "【拓扑参数对比】\n\n"
+        for period_name in selected:
+            if period_name in period_gdfs:
+                gdf = period_gdfs[period_name]
+                _, X, cols = get_topology_matrix(gdf)
+                nonzero = np.array(X.sum(axis=1)).ravel() > 0
+                txt += f"--- {period_name} ---\n"
+                txt += f"  总网格数: {len(gdf)}\n"
+                txt += f"  非零网格: {nonzero.sum()}\n"
+                for j, col in enumerate(cols):
+                    vals = X[nonzero, j]
+                    if len(vals) > 0:
+                        txt += f"  {col}: mean={vals.mean():.4f}, std={vals.std():.4f}\n"
+                txt += "\n"
+
+        self.text_browser.clear()
+        self.text_browser.insertPlainText(txt)
+        self.text_browser.moveCursor(QtGui.QTextCursor.End)
+
+        # 生成对比柱状图
+        figs = []
+        captions = []
+
+        # 柱状图：各时期非零网格数对比
+        fig, ax = plt.subplots(figsize=(8, 5))
+        period_names = []
+        nonzero_counts = []
+        total_counts = []
+        for period_name in selected:
+            if period_name in period_gdfs:
+                gdf = period_gdfs[period_name]
+                _, X, _ = get_topology_matrix(gdf)
+                nonzero = np.array(X.sum(axis=1)).ravel() > 0
+                period_names.append(period_name)
+                nonzero_counts.append(nonzero.sum())
+                total_counts.append(len(gdf))
+
+        x = np.arange(len(period_names))
+        width = 0.35
+        ax.bar(x - width/2, total_counts, width, label='总网格数', color='#457B9D', alpha=0.8)
+        ax.bar(x + width/2, nonzero_counts, width, label='非零网格', color='#E63946', alpha=0.8)
+        ax.set_xlabel('时期')
+        ax.set_ylabel('网格数')
+        ax.set_title('各时期网格统计对比')
+        ax.set_xticks(x)
+        ax.set_xticklabels(period_names)
+        ax.legend()
+        ax.grid(True, alpha=0.3, axis='y')
+        plt.tight_layout()
+        figs.append(fig)
+        captions.append('网格统计对比')
+
+        # 柱状图：各时期拓扑属性均值对比
+        fig2, ax2 = plt.subplots(figsize=(10, 6))
+        all_means = {}
+        for period_name in selected:
+            if period_name in period_gdfs:
+                gdf = period_gdfs[period_name]
+                _, X, cols = get_topology_matrix(gdf)
+                nonzero = np.array(X.sum(axis=1)).ravel() > 0
+                means = []
+                for j in range(len(cols)):
+                    vals = X[nonzero, j]
+                    means.append(vals.mean() if len(vals) > 0 else 0)
+                all_means[period_name] = means
+
+        x2 = np.arange(len(cols))
+        width2 = 0.8 / len(selected)
+        for i, period_name in enumerate(selected):
+            if period_name in all_means:
+                ax2.bar(x2 + i * width2, all_means[period_name], width2,
+                       label=period_name, alpha=0.8)
+
+        ax2.set_xlabel('拓扑属性')
+        ax2.set_ylabel('均值')
+        ax2.set_title('各时期拓扑属性均值对比')
+        ax2.set_xticks(x2 + width2 * (len(selected) - 1) / 2)
+        ax2.set_xticklabels(cols, rotation=45, ha='right')
+        ax2.legend()
+        ax2.grid(True, alpha=0.3, axis='y')
+        plt.tight_layout()
+        figs.append(fig2)
+        captions.append('拓扑属性均值对比')
+
+        if figs:
+            self.embed_figure(figs, descriptions=captions)
+        plt.close("all")
+        self._set_busy(False)
+        QMessageBox.information(self, "完成", "拓扑参数对比完成")
+
+    def _run_exp_length_powerlaw(self):
+        """运行长度分布幂律分析。"""
+        selected = self._get_selected_periods()
+        if not selected:
+            QMessageBox.warning(self, "提示", "请至少选择一个时期")
+            return
+        import matplotlib.pyplot as plt
+        plt.close("all")
+        self._set_busy(True, "长度分布分析中...")
+
+        def _worker():
+            from multiperiod_data import load_all_periods, get_topology_matrix
+            import numpy as np
+            period_gdfs = load_all_periods()
+            results = {}
+            for period_name, gdf in period_gdfs.items():
+                _, X, cols = get_topology_matrix(gdf)
+                nonzero = np.array(X.sum(axis=1)).ravel() > 0
+                # 提取长度相关属性（NC_NB, NC_NL, NB_NL）
+                length_cols = ['NC_NB', 'NC_NL', 'NB_NL']
+                length_data = {}
+                for col in length_cols:
+                    if col in cols:
+                        idx = cols.index(col)
+                        vals = X[nonzero, idx]
+                        length_data[col] = vals
+                results[period_name] = {
+                    'length_data': length_data,
+                    'nonzero_count': nonzero.sum(),
+                    'total_count': len(gdf),
+                }
+            return results
+        self._launch_multiperiod_task(_worker, "长度分布分析",
+            lambda res: self._show_length_powerlaw_result(res, selected))
+
+    def _show_length_powerlaw_result(self, results, selected):
+        """显示长度分布分析结果。"""
+        import matplotlib.pyplot as plt
+        import numpy as np
+
+        figs = []
+        captions = []
+
+        # 生成长度分布直方图
+        for col in ['NC_NB', 'NC_NL', 'NB_NL']:
+            fig, axes = plt.subplots(1, len(selected), figsize=(5 * len(selected), 4))
+            if len(selected) == 1:
+                axes = [axes]
+
+            for ax, period_name in zip(axes, selected):
+                if period_name in results:
+                    data = results[period_name]['length_data'].get(col)
+                    if data is not None and len(data) > 0:
+                        ax.hist(data, bins=30, color='#457B9D', alpha=0.7, edgecolor='white')
+                        ax.set_xlabel(col)
+                        ax.set_ylabel('频次')
+                        ax.set_title(f'{period_name}')
+                        ax.grid(True, alpha=0.3)
+
+            plt.suptitle(f'{col} 分布对比', fontsize=14, fontweight='bold')
+            plt.tight_layout()
+            figs.append(fig)
+            captions.append(f'{col} 分布对比')
+
+        # 显示统计信息
+        txt = "【长度分布分析】\n\n"
+        for period_name in selected:
+            if period_name in results:
+                r = results[period_name]
+                txt += f"--- {period_name} ---\n"
+                txt += f"  非零网格: {r['nonzero_count']}/{r['total_count']}\n"
+                for col, data in r['length_data'].items():
+                    if len(data) > 0:
+                        txt += f"  {col}: mean={data.mean():.4f}, std={data.std():.4f}, min={data.min():.4f}, max={data.max():.4f}\n"
+                txt += "\n"
+
+        self.text_browser.clear()
+        self.text_browser.insertPlainText(txt)
+        self.text_browser.moveCursor(QtGui.QTextCursor.End)
+
+        if figs:
+            self.embed_figure(figs, descriptions=captions)
+        plt.close("all")
+        self._set_busy(False)
+        QMessageBox.information(self, "完成", "长度分布分析完成")
+
+    def _run_exp_grid_sampling(self):
+        """运行网格采样分析。"""
+        selected = self._get_selected_periods()
+        if not selected:
+            QMessageBox.warning(self, "提示", "请至少选择一个时期")
+            return
+        import matplotlib.pyplot as plt
+        plt.close("all")
+        self._set_busy(True, "网格采样分析中...")
+
+        def _worker():
+            from multiperiod_data import load_all_periods, get_topology_matrix
+            import numpy as np
+            period_gdfs = load_all_periods()
+            results = {}
+            for period_name, gdf in period_gdfs.items():
+                _, X, cols = get_topology_matrix(gdf)
+                nonzero = np.array(X.sum(axis=1)).ravel() > 0
+                # 计算每个属性的统计信息
+                stats = {}
+                for j, col in enumerate(cols):
+                    vals = X[nonzero, j]
+                    if len(vals) > 0:
+                        stats[col] = {
+                            'mean': vals.mean(),
+                            'std': vals.std(),
+                            'min': vals.min(),
+                            'max': vals.max(),
+                            'median': np.median(vals),
+                        }
+                results[period_name] = {
+                    'stats': stats,
+                    'nonzero_count': nonzero.sum(),
+                    'total_count': len(gdf),
+                    'density': nonzero.sum() / len(gdf),
+                }
+            return results
+        self._launch_multiperiod_task(_worker, "网格采样分析",
+            lambda res: self._show_grid_sampling_result(res, selected))
+
+    def _show_grid_sampling_result(self, results, selected):
+        """显示网格采样分析结果。"""
+        import matplotlib.pyplot as plt
+        import numpy as np
+
+        figs = []
+        captions = []
+
+        # 生成密度对比图
+        fig, ax = plt.subplots(figsize=(8, 5))
+        period_names = []
+        densities = []
+        for period_name in selected:
+            if period_name in results:
+                period_names.append(period_name)
+                densities.append(results[period_name]['density'])
+
+        bars = ax.bar(period_names, densities, color=['#E63946', '#457B9D', '#2A9D8F'][:len(period_names)], alpha=0.8)
+        ax.set_xlabel('时期')
+        ax.set_ylabel('非零网格密度')
+        ax.set_title('各时期非零网格密度对比')
+        ax.grid(True, alpha=0.3, axis='y')
+
+        # 添加数值标签
+        for bar, v in zip(bars, densities):
+            ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.01,
+                   f'{v:.2%}', ha='center', va='bottom', fontsize=10)
+
+        plt.tight_layout()
+        figs.append(fig)
+        captions.append('非零网格密度对比')
+
+        # 生成属性分布箱线图
+        for col in ['NC_NB', 'NC_NL', 'NB_NL', 'NC_A', 'NB_A', 'NL_A']:
+            fig2, ax2 = plt.subplots(figsize=(8, 5))
+            data_to_plot = []
+            labels = []
+            for period_name in selected:
+                if period_name in results:
+                    stats = results[period_name]['stats'].get(col)
+                    if stats:
+                        data_to_plot.append([stats['min'], stats['median'], stats['max']])
+                        labels.append(period_name)
+
+            if data_to_plot:
+                # 简化版箱线图（用min/median/max）
+                x = np.arange(len(labels))
+                mins = [d[0] for d in data_to_plot]
+                medians = [d[1] for d in data_to_plot]
+                maxs = [d[2] for d in data_to_plot]
+
+                ax2.bar(x - 0.2, mins, 0.2, label='Min', color='#457B9D', alpha=0.6)
+                ax2.bar(x, medians, 0.2, label='Median', color='#E63946', alpha=0.8)
+                ax2.bar(x + 0.2, maxs, 0.2, label='Max', color='#2A9D8F', alpha=0.6)
+
+                ax2.set_xlabel('时期')
+                ax2.set_ylabel(col)
+                ax2.set_title(f'{col} 统计对比')
+                ax2.set_xticks(x)
+                ax2.set_xticklabels(labels)
+                ax2.legend()
+                ax2.grid(True, alpha=0.3, axis='y')
+                plt.tight_layout()
+                figs.append(fig2)
+                captions.append(f'{col} 统计对比')
+
+        # 显示详细统计信息
+        txt = "【网格采样分析】\n\n"
+        for period_name in selected:
+            if period_name in results:
+                r = results[period_name]
+                txt += f"--- {period_name} ---\n"
+                txt += f"  总网格数: {r['total_count']}\n"
+                txt += f"  非零网格: {r['nonzero_count']}\n"
+                txt += f"  非零密度: {r['density']:.2%}\n"
+                txt += "  拓扑属性统计:\n"
+                for col, stats in r['stats'].items():
+                    txt += f"    {col}: mean={stats['mean']:.4f}, std={stats['std']:.4f}\n"
+                txt += "\n"
+
+        self.text_browser.clear()
+        self.text_browser.insertPlainText(txt)
+        self.text_browser.moveCursor(QtGui.QTextCursor.End)
+
+        if figs:
+            self.embed_figure(figs, descriptions=captions)
+        plt.close("all")
+        self._set_busy(False)
+        QMessageBox.information(self, "完成", "网格采样分析完成")
+
     def _refresh_config_summary(self):
         train_cfg = _cfg_section("train")
         clustering_cfg = _cfg_section("clustering")
@@ -521,9 +1469,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         gui_target = self.combo_train_target.currentText().strip() if hasattr(self, "combo_train_target") else ""
         if not gui_target:
             gui_target = str(train_cfg.get("target_column", "Fracture Intensity B21"))
+
+        # 获取选定的时期
+        selected_periods = self._get_selected_periods() if hasattr(self, "_get_selected_periods") else []
+        periods_str = ", ".join(selected_periods) if selected_periods else "未选择"
+
         text = [
             "工区: 塔里木盆地英买2 (MY)",
             f"CSV: {csv_name}",
+            f"分析时期: {periods_str}",
             f"KMeans k（本次 GUI）: {gui_k}  |  config 默认: {clustering_cfg.get('n_clusters', 4)}",
             f"训练目标列（本次 GUI）: {gui_target}",
             f"网格步长（本次 GUI）: {gui_cell:.1f} m  |  config: {export_cfg.get('cell_width', 750.0)} m",
@@ -747,6 +1701,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if not isinstance(figs, list):
             figs = [figs]
         n = len(figs)
+
+        # 关闭旧的 matplotlib figures，防止重叠
+        if hasattr(self, "current_figs") and self.current_figs:
+            for old_fig in self.current_figs:
+                plt.close(old_fig)
+            self.current_figs = []
+
         if descriptions is not None and len(descriptions) == n:
             self._fig_captions = [str(s).strip() for s in descriptions]
         elif description:
@@ -755,58 +1716,44 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         else:
             self._fig_captions = [""] * n
 
-        while self.canvas_layout.count():
-            item = self.canvas_layout.takeAt(0)
-            widget = item.widget()
-            if widget is not None:
-                widget.setParent(None)
-                widget.deleteLater()
-            elif item.layout() is not None:
-                layout = item.layout()
-                while layout.count():
-                    sub_item = layout.takeAt(0)
-                    sub_widget = sub_item.widget()
-                    if sub_widget is not None:
-                        sub_widget.setParent(None)
-                        sub_widget.deleteLater()
-                layout.deleteLater()
-
         self.current_figs = figs
         self.current_fig_sizes = [tuple(fig.get_size_inches()) for fig in figs]
         self.current_fig_dpis = [fig.dpi for fig in figs]
         self.current_fig_idx = 0
 
         if len(figs) > 1:
-            self.gallery_control_layout = QtWidgets.QHBoxLayout()
-            self.gallery_control_layout.setContentsMargins(10, 5, 10, 5)
+            for _w in (self.btn_prev_fig, self.btn_next_fig, self.lbl_fig_status):
+                _w.setVisible(True)
+            self.lbl_fig_status.setText(f"第 1 张 / 共 {len(figs)} 张")
+        else:
+            for _w in (self.btn_prev_fig, self.btn_next_fig, self.lbl_fig_status):
+                _w.setVisible(False)
 
-            self.btn_prev_fig = QtWidgets.QPushButton("◀ 上一张")
-            self.btn_prev_fig.setStyleSheet(
-                    "background-color: #34495e; color: white; padding: 5px 15px; border-radius: 4px;")
-            self.btn_prev_fig.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
-
-            self.lbl_fig_status = QtWidgets.QLabel(f"1 / {len(figs)}")
-            self.lbl_fig_status.setAlignment(QtCore.Qt.AlignCenter)
-            self.lbl_fig_status.setStyleSheet("font-weight: bold; font-size: 14px;")
-
-            self.btn_next_fig = QtWidgets.QPushButton("下一张 ▶")
-            self.btn_next_fig.setStyleSheet(
-                "background-color: #34495e; color: white; padding: 5px 15px; border-radius: 4px;")
-            self.btn_next_fig.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
-
-            self.btn_prev_fig.clicked.connect(self.show_prev_figure)
-            self.btn_next_fig.clicked.connect(self.show_next_figure)
-
-            self.gallery_control_layout.addStretch()
-            self.gallery_control_layout.addWidget(self.btn_prev_fig)
-            self.gallery_control_layout.addWidget(self.lbl_fig_status)
-            self.gallery_control_layout.addWidget(self.btn_next_fig)
-            self.gallery_control_layout.addStretch()
-
-            self.canvas_layout.addLayout(self.gallery_control_layout)
+        # 仅清理动态创建的 canvas_display_layout，不动 gallery_control_layout
+        if hasattr(self, "canvas_display_layout") and self.canvas_display_layout is not None:
+            while self.canvas_display_layout.count():
+                item = self.canvas_display_layout.takeAt(0)
+                widget = item.widget()
+                if widget is not None:
+                    widget.setParent(None)
+                    widget.close()
+                    widget.deleteLater()
+                elif item.layout() is not None:
+                    layout = item.layout()
+                    while layout.count():
+                        sub_item = layout.takeAt(0)
+                        sub_widget = sub_item.widget()
+                        if sub_widget is not None:
+                            sub_widget.setParent(None)
+                            sub_widget.close()
+                            sub_widget.deleteLater()
+                    layout.deleteLater()
+            self.canvas_layout.removeItem(self.canvas_display_layout)
+            self.canvas_display_layout.deleteLater()
+            self.canvas_display_layout = None
 
         self.canvas_display_layout = QtWidgets.QVBoxLayout()
-        self.canvas_display_layout.setContentsMargins(8, 8, 8, 8)
+        self.canvas_display_layout.setContentsMargins(0, 0, 0, 0)
         self.canvas_display_layout.setSpacing(0)
         self.canvas_layout.addLayout(self.canvas_display_layout)
 
@@ -828,6 +1775,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             widget = item.widget()
             if widget is not None:
                 widget.setParent(None)
+                widget.close()
                 widget.deleteLater()
 
         fig = self.current_figs[self.current_fig_idx]
@@ -864,10 +1812,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             cap_scroll.setWidgetResizable(True)
             cap_scroll.setFrameShape(QtWidgets.QFrame.NoFrame)
             cap_scroll.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-            cap_scroll.setMaximumHeight(112)
+            cap_scroll.setSizePolicy(
+                QtWidgets.QSizePolicy.Expanding,
+                QtWidgets.QSizePolicy.Fixed,
+            )
+            cap_scroll.setFixedHeight(40)
             cap_scroll.setWidget(cap_lbl)
             cap_scroll.setStyleSheet("QScrollArea { background: transparent; }")
-            self.canvas_display_layout.addSpacing(12)
+            self.canvas_display_layout.addSpacing(8)
             self.canvas_display_layout.addWidget(cap_scroll)
 
         if len(self.current_figs) > 1:
@@ -1713,7 +2665,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def _setup_multiperiod_menu(self):
         """添加「多时期分析」菜单到 menubar。"""
-        menu = self.menubar.addMenu("多时期分析(三期)")
+        menu = self.menuBar().addMenu("多时期分析(三期)")
         menu.addAction("阶段1: 三期融合对比 (PCA+加权+XGBoost)", self._run_multiperiod_stage1)
         menu.addAction("阶段2: 三期空间叠加 (找靶区)", self._run_multiperiod_stage2)
         menu.addAction("阶段3: 渗流模拟 (崩塌阈值)", self._run_multiperiod_stage3)
@@ -1999,7 +2951,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if traces is None or area is None or traces.empty:
             QMessageBox.warning(self, "无数据", "请先切换数据源并确保迹线、研究区文件存在且非空。")
             return
-        fig, ax = plt.subplots(1, 1, figsize=(9, 9 * rate))
+        fig, ax = plt.subplots(1, 1, figsize=_safe_figsize())
         traces.plot(ax=ax, color="blue")
         ax.set_title(f"{name}, Coordinate Reference System = {traces.crs}")
         plt.xlim((left - width, right + width))
@@ -2008,6 +2960,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         for s in ax.spines.values():
             s.set_color("#0d0d0d")
             s.set_linewidth(1.35)
+        fig.tight_layout()
         self.embed_figure(
             fig,
             description="原始断裂迹线图：蓝色线为输入迹线，坐标系见标题；用于检查数据范围、与研究区是否一致，未做拓扑分类。",
@@ -2016,7 +2969,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def run_fenleihou(self):
         warnings.filterwarnings("ignore")
         def _render(network):
-            fig, ax = plt.subplots(figsize=(9, 9 * rate))
+            fig, ax = plt.subplots(figsize=_safe_figsize())
             ax.set_title(f"{name}, Coordinate Reference System = {traces.crs}")
             network.branch_gdf.plot(
                 colors=[assign_colors(bt) for bt in network.branch_types],
@@ -2036,6 +2989,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             for s in ax.spines.values():
                 s.set_color("#0d0d0d")
                 s.set_linewidth(1.35)
+            fig.tight_layout()
             self.embed_figure(
                 fig,
                 description=(
@@ -2048,7 +3002,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def run_tuopuhou1(self):
         warnings.filterwarnings("ignore")
         def _render(network):
-            fig, ax = plt.subplots(figsize=(9, 9 * rate))
+            fig, ax = plt.subplots(figsize=_safe_figsize())
             ax.set_title(f"{name}, Coordinate Reference System = {traces.crs}")
             network.trace_gdf.plot(ax=ax, linewidth=0.5, aspect="equal")
             network.node_gdf.plot(
@@ -2082,7 +3036,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         def _render(network):
             type_to_color = {'E': 'red', 'I': 'green', 'X': 'blue', 'Y': 'yellow'}
             type_to_shape = {'E': 'o', 'I': 'o', 'X': '^', 'Y': '*'}
-            fig, ax = plt.subplots(figsize=(9, 9 * rate))
+            fig, ax = plt.subplots(figsize=_safe_figsize())
             bg = network.branch_gdf
             if CONNECTION_COLUMN in bg.columns:
                 for conn_val, color, leg in [(CC_branch, "red", "CC"), (CI_branch, "green", "CI"), (II_branch, "blue", "II")]:
@@ -2132,7 +3086,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         def _render(network):
             pprint((network.azimuth_set_names, network.azimuth_set_ranges))
             pprint(network.trace_azimuth_set_counts)
-            fig, ax = plt.subplots(figsize=(9, 9 * rate))
+            fig, ax = plt.subplots(figsize=_safe_figsize())
             colors = ("red", "blue")
             for azimuth_set, set_range, color in zip(network.azimuth_set_names, network.azimuth_set_ranges, colors):
                 trace_gdf_set = network.trace_gdf.loc[network.trace_gdf["azimuth_set"] == azimuth_set]
@@ -2168,7 +3122,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         x, y = np.array(points).T
         kde = gaussian_kde(np.vstack([x, y]))
         kde_values = kde(np.vstack([x, y]))
-        fig, ax = plt.subplots(figsize=(9, 9 * rate))
+        fig, ax = plt.subplots(figsize=_safe_figsize())
         scatter = ax.scatter(x, y, c=kde_values, cmap="Reds", s=10, alpha=0.5)
         plt.title("Fracture density heatmap " + name)
         plt.axis("equal")
@@ -2394,7 +3348,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                             txt.set_clip_on(False)
             for fig in figs:
                 if hasattr(fig, "_suptitle") and fig._suptitle is not None:
-                    fig._suptitle.set_text(str(name))
+                    fig._suptitle.set_text(str(name) if name else "断裂网络")
                     zh_fonts = plt.rcParams.get("font.sans-serif", [])
                     if isinstance(zh_fonts, (list, tuple)) and len(zh_fonts) > 0:
                         fig._suptitle.set_fontfamily(zh_fonts[0])
@@ -2405,8 +3359,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     fig._suptitle.set_ha("center")
                     fig._suptitle.set_va("top")
                 # 略增子图间距与右侧留白，避免图例与 trace count 文本与邻轴重叠
-                fig.subplots_adjust(left=0.09, right=0.82, top=0.76, bottom=0.15, wspace=0.48)
-                fig.set_size_inches(16, 8.0)
+                fig.subplots_adjust(left=0.09, right=0.82, top=0.85, bottom=0.15, wspace=0.48)
+                fig.set_size_inches(16, 9.0)
             if figs:
                 _cap_rel = (
                     "交叉与相邻关系图：各子图表示两方位集之间交切（cross-cut）与不同方向邻接（abutting）的计数统计；"

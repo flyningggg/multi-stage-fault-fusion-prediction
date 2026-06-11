@@ -2,7 +2,7 @@ import geopandas as gpd
 import pandas as pd
 
 # 读取数据文件
-df = pd.read_csv('chemogulongqibei.dat', sep='\s+', header=None, names=['x', 'y', 'type'])
+df = pd.read_csv('chemogulongqibei.dat', sep=r'\s+', header=None, names=['x', 'y', 'type'])
 
 # 按type分类，将同一type的点坐标连接成线，形成LineString
 crack_lines = []
