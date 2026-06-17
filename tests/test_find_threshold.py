@@ -34,11 +34,12 @@ def test_steepest_too_few_points():
 
 
 def test_span():
+    # span 手算：n_nodes = 1/sizes[0] = 1/1.0 = 1
+    #           span_threshold = 1/sqrt(1) = 1.0
+    #           首个 sizes[i] < 1.0 在 index 1（0.8<1.0）→ 返回 fractions[1]=0.25
     fractions = np.array([0.0, 0.25, 0.5, 0.75, 1.0])
     sizes = np.array([1.0, 0.8, 0.6, 0.4, 0.2])
-    # span 语义见源码；本测试只断言结果落在 [0,1]
-    result = find_percolation_threshold(fractions, sizes, method="span")
-    assert 0.0 <= result <= 1.0
+    assert find_percolation_threshold(fractions, sizes, method="span") == pytest.approx(0.25)
 
 
 def test_unknown_method():

@@ -8,7 +8,6 @@ from multiperiod_overlay import (
     find_exact_vertex_matches,
     find_centroid_distance_matches,
     identify_target_areas,
-    CENTROID_MATCH_TOLERANCE_M,
 )
 from tests.conftest import make_grid_gdf
 
