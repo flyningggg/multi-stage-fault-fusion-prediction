@@ -486,7 +486,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.btn_prev_fig.clicked.connect(self.show_prev_figure)
         self.btn_next_fig.clicked.connect(self.show_next_figure)
 
-        self.canvas_display_layout = None
         # 2. 绑定第一排：基础地质与拓扑绘图
         self.btn_yuantu.clicked.connect(self.run_yuantu)
         self.btn_fenleihou.clicked.connect(self.run_fenleihou)
@@ -1573,17 +1572,33 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.statusBar().clearMessage()
 
     def cancel_running_task(self):
-        t = getattr(self, "_running_task", None)
-        if t is None:
-            return
-        try:
-            t.terminate()
-            t.wait(1500)
-        except Exception:
-            pass
-        self._running_task = None
-        self._set_busy(False)
-        QMessageBox.information(self, "已取消", "后台任务已取消。")
+        cancelled_any = False
+        for attr in ("_running_task", "_nw_runner", "_lunkuo_runner"):
+            runner = getattr(self, attr, None)
+            if runner is None:
+                continue
+            try:
+                runner.terminate()
+                runner.wait(1500)
+            except Exception:
+                pass
+            setattr(self, attr, None)
+            cancelled_any = True
+        if cancelled_any:
+            self._set_busy(False)
+            QMessageBox.information(self, "已取消", "后台任务已取消。")
+
+    def closeEvent(self, event):
+        import matplotlib.pyplot as plt
+        self.cancel_running_task()
+        sys.stdout = sys.__stdout__
+        sys.stderr = sys.__stderr__
+        plt.close("all")
+        if hasattr(self, "current_figs"):
+            for f in self.current_figs:
+                plt.close(f)
+            self.current_figs = []
+        super().closeEvent(event)
 
     def _friendly_error_message(self, action: str, err_text: str) -> str:
         s = str(err_text or "")
@@ -1729,7 +1744,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             for _w in (self.btn_prev_fig, self.btn_next_fig, self.lbl_fig_status):
                 _w.setVisible(False)
 
-        # 仅清理动态创建的 canvas_display_layout，不动 gallery_control_layout
+        # 仅清空 canvas_display_layout 内的子项（画布/说明），
+        # 不重建 layout 本身——因为它已通过 setLayout 绑定到 canvas_scroll_content，
+        # Qt 不允许对同一 widget 重复 setLayout。复用即可。
         if hasattr(self, "canvas_display_layout") and self.canvas_display_layout is not None:
             while self.canvas_display_layout.count():
                 item = self.canvas_display_layout.takeAt(0)
@@ -1748,86 +1765,103 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                             sub_widget.close()
                             sub_widget.deleteLater()
                     layout.deleteLater()
-            self.canvas_layout.removeItem(self.canvas_display_layout)
-            self.canvas_display_layout.deleteLater()
-            self.canvas_display_layout = None
 
-        self.canvas_display_layout = QtWidgets.QVBoxLayout()
-        self.canvas_display_layout.setContentsMargins(0, 0, 0, 0)
-        self.canvas_display_layout.setSpacing(0)
-        self.canvas_layout.addLayout(self.canvas_display_layout)
+        # 复用已绑定到 canvas_scroll_content 的 canvas_display_layout
+        # （首次进入时由 demo.py 初始化；此处确保存在且已清空）
 
         self._render_current_figure()
 
     def show_prev_figure(self):
+        if not getattr(self, "current_figs", None):
+            return
         if self.current_fig_idx > 0:
             self.current_fig_idx -= 1
             self._render_current_figure()
 
     def show_next_figure(self):
+        if not getattr(self, "current_figs", None):
+            return
         if self.current_fig_idx < len(self.current_figs) - 1:
             self.current_fig_idx += 1
             self._render_current_figure()
 
     def _render_current_figure(self):
-        while self.canvas_display_layout.count():
-            item = self.canvas_display_layout.takeAt(0)
-            widget = item.widget()
-            if widget is not None:
-                widget.setParent(None)
-                widget.close()
-                widget.deleteLater()
+        if getattr(self, "_rendering", False):
+            return
+        self._rendering = True
+        try:
+            while self.canvas_display_layout.count():
+                item = self.canvas_display_layout.takeAt(0)
+                widget = item.widget()
+                if widget is not None:
+                    widget.setParent(None)
+                    widget.close()
+                    widget.deleteLater()
+                elif item.layout() is not None:
+                    layout = item.layout()
+                    while layout.count():
+                        sub_item = layout.takeAt(0)
+                        sub_widget = sub_item.widget()
+                        if sub_widget is not None:
+                            sub_widget.setParent(None)
+                            sub_widget.close()
+                            sub_widget.deleteLater()
+                    layout.deleteLater()
 
-        fig = self.current_figs[self.current_fig_idx]
-        if hasattr(self, "current_fig_sizes") and self.current_fig_idx < len(self.current_fig_sizes):
-            width, height = self.current_fig_sizes[self.current_fig_idx]
-            fig.set_size_inches(width, height, forward=False)
-        if hasattr(self, "current_fig_dpis") and self.current_fig_idx < len(self.current_fig_dpis):
-            fig.set_dpi(self.current_fig_dpis[self.current_fig_idx])
+            fig = self.current_figs[self.current_fig_idx]
+            if hasattr(self, "current_fig_sizes") and self.current_fig_idx < len(self.current_fig_sizes):
+                width, height = self.current_fig_sizes[self.current_fig_idx]
+                fig.set_size_inches(width, height, forward=False)
+            if hasattr(self, "current_fig_dpis") and self.current_fig_idx < len(self.current_fig_dpis):
+                fig.set_dpi(self.current_fig_dpis[self.current_fig_idx])
 
-        canvas = FigureCanvas(fig)
-        canvas.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-        self.canvas_display_layout.addWidget(canvas, 1)
-        canvas.draw()
+            canvas = FigureCanvas(fig)
+            canvas.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+            canvas.setMinimumHeight(int(fig.get_size_inches()[1] * fig.dpi))
+            self.canvas_display_layout.addWidget(canvas, 1)
+            canvas.draw()
+            QtWidgets.QApplication.processEvents()
 
-        cap_text = ""
-        if hasattr(self, "_fig_captions") and self.current_fig_idx < len(self._fig_captions):
-            cap_text = self._fig_captions[self.current_fig_idx]
-        if cap_text:
-            cap_lbl = QtWidgets.QLabel()
-            cap_lbl.setObjectName("figureCaptionLabel")
-            cap_lbl.setWordWrap(True)
-            cap_lbl.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
-            cap_lbl.setOpenExternalLinks(False)
-            cap_lbl.setAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
-            cap_lbl.setStyleSheet(
-                "QLabel#figureCaptionLabel {"
-                " background-color: #f1f3f5; color: #212529; padding: 6px 10px;"
-                " border-radius: 6px; font-size: 12px; border: 1px solid #dee2e6;"
-                " line-height: 1.35;"
-                "}"
-            )
-            cap_lbl.setText("【图说明】" + cap_text)
-            cap_scroll = QtWidgets.QScrollArea()
-            cap_scroll.setWidgetResizable(True)
-            cap_scroll.setFrameShape(QtWidgets.QFrame.NoFrame)
-            cap_scroll.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-            cap_scroll.setSizePolicy(
-                QtWidgets.QSizePolicy.Expanding,
-                QtWidgets.QSizePolicy.Fixed,
-            )
-            cap_scroll.setFixedHeight(40)
-            cap_scroll.setWidget(cap_lbl)
-            cap_scroll.setStyleSheet("QScrollArea { background: transparent; }")
-            self.canvas_display_layout.addSpacing(8)
-            self.canvas_display_layout.addWidget(cap_scroll)
+            cap_text = ""
+            if hasattr(self, "_fig_captions") and self.current_fig_idx < len(self._fig_captions):
+                cap_text = self._fig_captions[self.current_fig_idx]
+            if cap_text:
+                cap_lbl = QtWidgets.QLabel()
+                cap_lbl.setObjectName("figureCaptionLabel")
+                cap_lbl.setWordWrap(True)
+                cap_lbl.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
+                cap_lbl.setOpenExternalLinks(False)
+                cap_lbl.setAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
+                cap_lbl.setStyleSheet(
+                    "QLabel#figureCaptionLabel {"
+                    " background-color: #f1f3f5; color: #212529; padding: 6px 10px;"
+                    " border-radius: 6px; font-size: 12px; border: 1px solid #dee2e6;"
+                    " line-height: 1.35;"
+                    "}"
+                )
+                cap_lbl.setText("【图说明】" + cap_text)
+                cap_scroll = QtWidgets.QScrollArea()
+                cap_scroll.setWidgetResizable(True)
+                cap_scroll.setFrameShape(QtWidgets.QFrame.NoFrame)
+                cap_scroll.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+                cap_scroll.setSizePolicy(
+                    QtWidgets.QSizePolicy.Expanding,
+                    QtWidgets.QSizePolicy.Fixed,
+                )
+                cap_scroll.setFixedHeight(40)
+                cap_scroll.setWidget(cap_lbl)
+                cap_scroll.setStyleSheet("QScrollArea { background: transparent; }")
+                self.canvas_display_layout.addSpacing(8)
+                self.canvas_display_layout.addWidget(cap_scroll)
 
-        if len(self.current_figs) > 1:
-            self.lbl_fig_status.setText(f"第 {self.current_fig_idx + 1} 张 / 共 {len(self.current_figs)} 张")
-            self.btn_prev_fig.setEnabled(self.current_fig_idx > 0)
-            self.btn_next_fig.setEnabled(self.current_fig_idx < len(self.current_figs) - 1)
+            if len(self.current_figs) > 1:
+                self.lbl_fig_status.setText(f"第 {self.current_fig_idx + 1} 张 / 共 {len(self.current_figs)} 张")
+                self.btn_prev_fig.setEnabled(self.current_fig_idx > 0)
+                self.btn_next_fig.setEnabled(self.current_fig_idx < len(self.current_figs) - 1)
 
-        QtWidgets.QApplication.processEvents()
+            QtWidgets.QApplication.processEvents()
+        finally:
+            self._rendering = False
 
     def _plot_latent_fusion_kmeans_regions(
         self,
@@ -2042,7 +2076,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 f"当前并列最低的网格数：{n_at_min}（多为无断裂或拓扑特征最弱的格子）。\n"
             )
             txt += "\n前 5 行得分：\n" + df["weighted_fusion_score"].head().to_string()
-            self.text_browser.clear()
             self.text_browser.insertPlainText(txt)
             self.text_browser.moveCursor(QTextCursor.End)
             QMessageBox.information(self, "完成", "加权融合已运行，结果已显示在左侧文本框。")
@@ -2071,20 +2104,19 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 txt += "\n因此箱线图右侧「GAT 融合」常显示为一条贴在 0 的线，并非加权融合也有问题。\n"
             if res.get("boxplot_path") and os.path.isfile(res["boxplot_path"]):
                 txt += f"\n箱线图已保存：{res['boxplot_path']}\n"
-                plt.figure(figsize=(5, 4))
+                fig = plt.figure(figsize=(5, 4))
                 img = plt.imread(res["boxplot_path"])
                 plt.imshow(img)
                 plt.axis("off")
                 plt.tight_layout()
                 self.embed_figure(
-                    plt.gcf(),
+                    fig,
                     description=(
                         "箱线图对比「规则加权融合」与「GAT 图注意力融合」在每张网格上的得分分布；"
                         "箱体与须须表示分位与离散程度，若离群点多说明工区内差异大。"
                         "若 GAT 侧退化，左侧文本会说明原因。"
                     ),
                 )
-            self.text_browser.clear()
             self.text_browser.insertPlainText(txt)
             self.text_browser.moveCursor(QTextCursor.End)
             if res.get("gat_degraded"):
@@ -2914,6 +2946,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         traces_snap = traces.copy()
         area_snap = area.copy() if area is not None else None
         name_snap = name
+        left_snap, right_snap = left, right
+        down_snap, up_snap = down, up
+        width_snap, height_snap = width, height
+        rate_snap = rate
 
         def _bg():
             nw, err = try_network(traces_snap, area_snap, name=name_snap, **kw)
@@ -2922,11 +2958,18 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             return nw
 
         def _done(nw):
+            global left, right, down, up, width, height, rate
+            saved = (left, right, down, up, width, height, rate)
+            left, right = left_snap, right_snap
+            down, up = down_snap, up_snap
+            width, height = width_snap, height_snap
+            rate = rate_snap
             try:
                 render_fn(nw)
             except Exception as e:
                 print(f"❌ 渲染报错: {e}")
             finally:
+                left, right, down, up, width, height, rate = saved
                 _cleanup()
 
         def _fail(msg):
@@ -2954,8 +2997,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         fig, ax = plt.subplots(1, 1, figsize=_safe_figsize())
         traces.plot(ax=ax, color="blue")
         ax.set_title(f"{name}, Coordinate Reference System = {traces.crs}")
-        plt.xlim((left - width, right + width))
-        plt.ylim((down - height, up + height))
+        ax.set_xlim(left - width, right + width)
+        ax.set_ylim(down - height, up + height)
         ax.set_aspect('equal')
         for s in ax.spines.values():
             s.set_color("#0d0d0d")
@@ -2983,8 +3026,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 plt.Line2D([0], [0], color="red", lw=2, label="Other / Boundary"),
             ]
             ax.legend(handles=handles, loc='lower left')
-            plt.xlim((left - width, right + width))
-            plt.ylim((down - height, up + height))
+            ax.set_xlim(left - width, right + width)
+            ax.set_ylim(down - height, up + height)
             ax.set_aspect('equal')
             for s in ax.spines.values():
                 s.set_color("#0d0d0d")
@@ -3019,8 +3062,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 plt.Line2D([0], [0], marker='o', color='w', markerfacecolor="red", markersize=10, label="Other / Boundary"),
             ]
             ax.legend(handles=handles, loc='lower left')
-            plt.xlim((left - width, right + width))
-            plt.ylim((down - height, up + height))
+            ax.set_xlim(left - width, right + width)
+            ax.set_ylim(down - height, up + height)
             ax.set_aspect('equal')
             self.embed_figure(
                 fig,
@@ -3057,8 +3100,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     ax.scatter(nodes.geometry.x, nodes.geometry.y, s=50,
                                c=type_to_color[node_type], marker=type_to_shape[node_type], label=node_type, zorder=5)
             area.boundary.plot(ax=ax, color="red", aspect="equal")
-            plt.xlim((left - width, right + width))
-            plt.ylim((down - height, up + height))
+            ax.set_xlim(left - width, right + width)
+            ax.set_ylim(down - height, up + height)
             ax.legend(title=' Type')
             ax.set_aspect('equal')
             self.embed_figure(
@@ -3094,8 +3137,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             zh_fonts = plt.rcParams.get("font.sans-serif", [])
             font_family = zh_fonts[0] if isinstance(zh_fonts, (list, tuple)) and len(zh_fonts) > 0 else "Microsoft YaHei"
             ax.set_title(f"方位角集图 - {name}", fontsize=14, fontfamily=font_family)
-            plt.xlim((left - width, right + width))
-            plt.ylim((down - height, up + height))
+            ax.set_xlim(left - width, right + width)
+            ax.set_ylim(down - height, up + height)
             ax.set_aspect('equal')
             for s in ax.spines.values():
                 s.set_color("#0d0d0d")
@@ -3127,8 +3170,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         plt.title("Fracture density heatmap " + name)
         plt.axis("equal")
         ax.set_aspect('equal')
-        plt.xlim((left - width, right + width))
-        plt.ylim((down - height, up + height))
+        ax.set_xlim(left - width, right + width)
+        ax.set_ylim(down - height, up + height)
         for s in ax.spines.values():
             s.set_color("#0d0d0d")
             s.set_linewidth(1.35)
@@ -3465,7 +3508,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
                 try:
                     network.trace_gdf.plot(ax=ax, color='black', linewidth=0.5, alpha=0.3)
-                except:
+                except Exception:
                     pass
 
                 contour = ax.tricontourf(x, y, z, levels=50, cmap='plasma', alpha=0.85)
@@ -3491,7 +3534,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 print(f"平滑渲染失败: {param}。原因: {str(e)}")
                 try:
                     plt.close(fig)
-                except:
+                except Exception:
                     pass
 
     def run_lunkuo(self):

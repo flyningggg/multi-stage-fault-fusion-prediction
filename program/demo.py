@@ -470,15 +470,34 @@ class Ui_MainWindow(object):
         self.tab_experiment_layout.addStretch()
         self.tab_widget.addTab(self.tab_experiment, "实验")
 
+        # 约束选项卡高度：防止 tab 内容抢占画布空间导致与下方显示区重叠
+        # tab 内仅含按钮行，200px 足够 3 行 + 间距；超出不影响布局
+        self.tab_widget.setMaximumHeight(200)
         self.right_panel_layout.addWidget(self.tab_widget)
 
         # ==========================================
         # 画布区域
         # ==========================================
+        # canvas_layout 仍是直接持有 gallery_control_layout 的容器，
+        # 但实际画布（canvas_display_layout）渲染到 scroll_area 内，
+        # 这样 matplotlib figure 即使尺寸超过可用空间也能滚动而不撑破 VBox
         self.canvas_container = QtWidgets.QWidget()
         self.canvas_container.setStyleSheet("background-color: white; border: 1px solid #ccc;")
         self.canvas_layout = QtWidgets.QVBoxLayout(self.canvas_container)
         self.canvas_layout.setContentsMargins(0, 0, 0, 0)
+        self.canvas_layout.setSpacing(0)
+
+        # 画布滚动容器：figure 物理尺寸大于可用区时可滚动，杜绝反向撑破布局
+        self.canvas_scroll = QtWidgets.QScrollArea()
+        self.canvas_scroll.setWidgetResizable(True)
+        self.canvas_scroll.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self.canvas_scroll.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
+        self.canvas_scroll.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
+        self.canvas_scroll.setStyleSheet("QScrollArea { background-color: white; }")
+        # 滚动区内部的承载控件，canvas_display_layout 将挂在其上
+        self.canvas_scroll_content = QtWidgets.QWidget()
+        self.canvas_scroll_content.setStyleSheet("background-color: white;")
+        self.canvas_scroll.setWidget(self.canvas_scroll_content)
 
         # 翻页控制
         self.gallery_control_layout = QtWidgets.QHBoxLayout()
@@ -499,8 +518,16 @@ class Ui_MainWindow(object):
         self.gallery_control_layout.addStretch()
 
         self.canvas_layout.addLayout(self.gallery_control_layout)
+        # 将画布滚动区放入画布容器（在翻页控制栏之下），占据剩余弹性空间
+        self.canvas_layout.addWidget(self.canvas_scroll, 1)
         for _w in (self.btn_prev_fig, self.btn_next_fig, self.lbl_fig_status):
             _w.setVisible(False)
+        # 初始化一个空布局挂到滚动区内容控件上，供 main.py.embed_figure 复用/清理
+        # （embed_figure 会移除旧 canvas_display_layout 并新建，因此初始值非 None 即可）
+        self.canvas_display_layout = QtWidgets.QVBoxLayout(self.canvas_scroll_content)
+        self.canvas_display_layout.setContentsMargins(0, 0, 0, 0)
+        self.canvas_display_layout.setSpacing(0)
+        self.canvas_display_layout.addStretch()
         self.right_panel_layout.addWidget(self.canvas_container, 1)
 
         # --- 最近一次运行结果 ---
