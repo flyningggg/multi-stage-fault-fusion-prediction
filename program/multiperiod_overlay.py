@@ -531,7 +531,7 @@ def _plot_overlap_grid(
 # ---------------------------------------------------------------------------
 def run_overlay_pipeline(
     out_dir: Optional[str] = None,
-    max_dist: float = CENTROID_MATCH_TOLERANCE_M,
+    max_dist: Optional[float] = None,
 ) -> dict:
     """
     Stage 2：三期空间叠加主流程。
@@ -539,10 +539,17 @@ def run_overlay_pipeline(
     2. 查找三期全重叠网格
     3. 靶区空间聚类
     4. 导出重叠表 + 可视化
+
+    匹配/聚类容差默认从 config.yaml 的 grid 段读取；显式传参优先于配置。
     """
     if out_dir is None:
         out_dir = os.path.join(_THIS_DIR, "data", "processed", "multiperiod")
     os.makedirs(out_dir, exist_ok=True)
+
+    cfg = load_config()
+    grid_cfg = cfg.get("grid", {}) if isinstance(cfg, dict) else {}
+    if max_dist is None:
+        max_dist = float(grid_cfg.get("centroid_match_tolerance_m", CENTROID_MATCH_TOLERANCE_M))
 
     logger.info("=== Stage 2: 三期空间叠加 ===")
 
@@ -558,8 +565,12 @@ def run_overlay_pipeline(
         logger.warning("未找到三期全重叠区域")
         return {"period_gdfs": period_gdfs, "overlap_df": overlap_df}
 
-    # 靶区聚类
-    overlap_df = identify_target_areas(overlap_df, min_cluster_size=3, eps_meters=4500)
+    # 靶区聚类（eps/最小簇样本数可经 config.yaml grid 段覆盖）
+    overlap_df = identify_target_areas(
+        overlap_df,
+        min_cluster_size=int(grid_cfg.get("target_min_cluster_size", 3)),
+        eps_meters=float(grid_cfg.get("target_eps_m", 4500)),
+    )
     target_counts = overlap_df["target_area"].value_counts()
     logger.info("靶区分布:\n%s", target_counts.to_string())
 
