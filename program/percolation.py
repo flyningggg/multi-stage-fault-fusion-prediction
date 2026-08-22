@@ -259,7 +259,7 @@ def find_percolation_threshold(
 # ---------------------------------------------------------------------------
 # 关键节点识别
 # ---------------------------------------------------------------------------
-def _identify_boundary_nodes(G: "nx.Graph", gdf) -> set:
+def _identify_boundary_nodes(G: "nx.Graph", gdf, grid_step: float = GRID_STEP) -> set:
     """
     识别边界节点：位于研究区矩形边界上的节点。
     这些节点的 betweenness 会因边界效应而虚高。
@@ -273,9 +273,8 @@ def _identify_boundary_nodes(G: "nx.Graph", gdf) -> set:
     x_min, x_max = xs.min(), xs.max()
     y_min, y_max = ys.min(), ys.max()
 
-    # 网格步长（约3000m）
-    step = 3000.0
-    tol = step * 0.5
+    # 网格步长（默认与 GRID_STEP 一致，可经 config 覆盖）
+    tol = grid_step * 0.5
 
     boundary_nodes = set()
     for i in range(len(gdf)):
