@@ -9,6 +9,8 @@ from agent_model import (
     AGENT_EXCLUDE_COLS,
     _build_block_ids,
     _feature_cols,
+    _lopo_split,
+    leave_one_period_out_evaluate,
     spatial_cv_evaluate,
 )
 
@@ -81,3 +83,24 @@ def test_spatial_cv_returns_aggregates():
     assert out["n_blocks_used"] >= 2
     assert 2 <= out["n_splits_used"] <= 3
     assert -1.0 <= out["r2_mean"] <= 1.0
+
+
+def test_lopo_split_disjoint_and_covers():
+    splits = _lopo_split(["A", "B", "C"])
+    assert len(splits) == 3
+    for train_ps, test_p in splits:
+        assert test_p not in train_ps
+        assert sorted(train_ps + [test_p]) == ["A", "B", "C"]
+    # 每个时期恰好被留出一次
+    assert sorted(t for _, t in splits) == ["A", "B", "C"]
+
+
+def test_lopo_evaluate_covers_all_periods():
+    df = make_synth_df()
+    out = leave_one_period_out_evaluate(df, xgb_params=FAST_XGB)
+    assert set(out["per_period"].keys()) == {"A", "B", "C"}
+    for m in out["per_period"].values():
+        for key in ["r2", "rmse", "mae", "n_test"]:
+            assert key in m and np.isfinite(m[key])
+        assert m["n_test"] == 40
+    assert np.isfinite(out["r2_mean"]) and np.isfinite(out["r2_std"])

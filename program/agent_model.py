@@ -167,6 +167,69 @@ def spatial_cv_evaluate(
     return out
 
 
+def _lopo_split(unique_periods) -> List[Tuple[List, object]]:
+    """留一期外推划分：返回 [(train_periods(list), test_period)]，互斥且覆盖全集。"""
+    periods = list(unique_periods)
+    return [
+        ([p for p in periods if p != test_p], test_p)
+        for test_p in periods
+    ]
+
+
+def leave_one_period_out_evaluate(
+    df,
+    target_col: str = "log1p_betweenness",
+    xgb_params: Optional[Dict] = None,
+) -> Dict:
+    """
+    Leave-One-Period-Out 跨期外推评估：
+    每次留出一个完整时期作测试集、其余时期训练，
+    度量「对未见断裂网络的泛化能力」。
+    返回 per_period 逐期指标与聚合 r2_mean/r2_std；时期数 <2 时返回 {}。
+
+    ponytail: 各期网格规模不同，逐期指标才是科学结论主体；均值仅作总览。
+    """
+    if not HAS_XGB:
+        raise ImportError("需要 xgboost")
+    from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
+
+    periods = sorted(df["period"].unique())
+    if len(periods) < 2:
+        logger.warning("leave_one_period_out_evaluate: 时期数 <2，跳过")
+        return {}
+
+    params = dict(AGENT_XGB_PARAMS)
+    if xgb_params:
+        params.update(xgb_params)
+
+    feats = _feature_cols(df)
+    per_period: Dict[str, Dict] = {}
+    r2_list: List[float] = []
+    for train_ps, test_p in _lopo_split(periods):
+        tr = df[df["period"].isin(train_ps)]
+        te = df[df["period"] == test_p]
+        m = xgb.XGBRegressor(**params)
+        m.fit(tr[feats].to_numpy(dtype=float), tr[target_col].to_numpy(dtype=float))
+        pred = m.predict(te[feats].to_numpy(dtype=float))
+        y_true = te[target_col].to_numpy(dtype=float)
+        metrics = {
+            "r2": float(r2_score(y_true, pred)),
+            "rmse": float(np.sqrt(mean_squared_error(y_true, pred))),
+            "mae": float(mean_absolute_error(y_true, pred)),
+            "n_test": int(len(te)),
+        }
+        per_period[str(test_p)] = metrics
+        r2_list.append(metrics["r2"])
+        logger.info("LOPO %s: R²=%.4f RMSE=%.4f (n=%d)",
+                    test_p, metrics["r2"], metrics["rmse"], metrics["n_test"])
+
+    return {
+        "per_period": per_period,
+        "r2_mean": float(np.mean(r2_list)),
+        "r2_std": float(np.std(r2_list)),
+    }
+
+
 # ---------------------------------------------------------------------------
 # 空间特征工程
 # ---------------------------------------------------------------------------
