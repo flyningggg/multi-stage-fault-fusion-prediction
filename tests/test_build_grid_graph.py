@@ -78,3 +78,24 @@ def test_isolated_node_exists():
     assert G.number_of_nodes() == 5
     # 远离格（最后一行，索引 4）度=0
     assert dict(G.degree())[4] == 0
+
+
+def test_custom_grid_step_param():
+    # 6000m 步长网格 + grid_step=6000 → 4 邻接正确（12 边）
+    gdf = make_grid_gdf(3, 3, step=6000.0)
+    G = build_grid_graph(gdf, edge_weight_col="NC_A", weight_mode="min",
+                         grid_step=6000.0)
+    assert G.number_of_edges() == 12
+    assert set(G.neighbors(0)) == {1, 3}
+
+
+def test_edge_tolerance_param_controls_adjacency():
+    # 两格垂直间距 3050m：默认容差 150 可邻接；收紧到 10 后断开
+    from shapely.geometry import box
+    gdf = make_grid_gdf(1, 2)  # (0,0), (0,3000)
+    gdf.loc[1, "geometry"] = box(-100, 2950, 100, 3150)  # centroid (0,3050)
+    G_default = build_grid_graph(gdf, edge_weight_col="NC_A", weight_mode="min")
+    assert G_default.has_edge(0, 1)
+    G_tight = build_grid_graph(gdf, edge_weight_col="NC_A", weight_mode="min",
+                               edge_dist_tolerance=10.0)
+    assert not G_tight.has_edge(0, 1)

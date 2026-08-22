@@ -52,6 +52,8 @@ def build_grid_graph(
     gdf: gpd.GeoDataFrame,
     edge_weight_col: str = "NC_A",
     weight_mode: str = "min",
+    grid_step: float = GRID_STEP,
+    edge_dist_tolerance: float = EDGE_DIST_TOLERANCE,
 ) -> "nx.Graph":
     """
     将网格 GeoDataFrame 构建为邻接图。
@@ -100,7 +102,7 @@ def build_grid_graph(
         raise ImportError("图构建需要 scipy: pip install scipy")
 
     tree = cKDTree(centroids)
-    max_dist = GRID_STEP * 1.15
+    max_dist = grid_step * 1.15
 
     for i in range(len(centroids)):
         neighbors = tree.query_ball_point(centroids[i], max_dist)
@@ -110,8 +112,8 @@ def build_grid_graph(
             dx = abs(centroids[i, 0] - centroids[j, 0])
             dy = abs(centroids[i, 1] - centroids[j, 1])
             # 只连接正交方向（4邻接），排除对角
-            h_adj = (dx < EDGE_DIST_TOLERANCE) and (abs(dy - GRID_STEP) < EDGE_DIST_TOLERANCE)
-            v_adj = (dy < EDGE_DIST_TOLERANCE) and (abs(dx - GRID_STEP) < EDGE_DIST_TOLERANCE)
+            h_adj = (dx < edge_dist_tolerance) and (abs(dy - grid_step) < edge_dist_tolerance)
+            v_adj = (dy < edge_dist_tolerance) and (abs(dx - grid_step) < edge_dist_tolerance)
             if h_adj or v_adj:
                 w_i = float(weights[i])
                 w_j = float(weights[j])
