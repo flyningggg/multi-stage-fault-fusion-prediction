@@ -7,6 +7,7 @@ import pytest
 
 from agent_model import (
     AGENT_EXCLUDE_COLS,
+    _build_block_ids,
     _feature_cols,
 )
 
