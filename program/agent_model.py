@@ -16,7 +16,7 @@ if _THIS_DIR not in sys.path:
 from multiperiod_data import (
     load_all_periods, get_topology_matrix, TOPOLOGY_ATTRIBUTES,
 )
-from percolation import build_grid_graph
+from percolation import build_grid_graph, GRID_STEP
 
 from utils.logging_utils import get_logger
 
@@ -69,8 +69,8 @@ def _compute_neighbor_features(
         key = (round(xs[i], 1), round(ys[i], 1))
         coord_to_idx[key] = i
 
-    # 网格步长（约3000m）
-    step = 3000.0
+    # 网格步长（复用 percolation.GRID_STEP，可经 config 覆盖）
+    step = GRID_STEP
     tol = step * 0.5  # 容差
 
     # 计算邻居特征
