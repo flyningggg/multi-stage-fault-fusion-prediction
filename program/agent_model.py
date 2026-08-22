@@ -45,6 +45,40 @@ except ImportError:
 
 
 # ---------------------------------------------------------------------------
+# 诚实评估共享常量与工具
+# ---------------------------------------------------------------------------
+# 代理模型统一超参（train_agent_model 与 CV/LOPO 折内模型共用）
+AGENT_XGB_PARAMS: Dict = {
+    "n_estimators": 800,
+    "max_depth": 8,
+    "learning_rate": 0.02,
+    "subsample": 0.8,
+    "colsample_bytree": 0.7,
+    "reg_alpha": 0.05,
+    "reg_lambda": 1.0,
+    "min_child_weight": 3,
+    "gamma": 0.05,
+    "random_state": 42,
+    "verbosity": 0,
+}
+
+# 训练 df 的元数据列：不作为特征进入模型
+AGENT_EXCLUDE_COLS = {
+    "period",
+    "betweenness",
+    "log1p_betweenness",
+    "log_betweenness",
+    "cell_x",
+    "cell_y",
+}
+
+
+def _feature_cols(df) -> List[str]:
+    """从训练 df 推导特征列（排除全部元数据列）。"""
+    return [c for c in df.columns if c not in AGENT_EXCLUDE_COLS]
+
+
+# ---------------------------------------------------------------------------
 # 空间特征工程
 # ---------------------------------------------------------------------------
 def _compute_neighbor_features(
@@ -171,6 +205,11 @@ def build_agent_training_data(
                                             normalized=False)
         logger.info("  精确 betweenness 计算完成: %d 节点", n_nodes)
 
+        # 原始质心坐标（元数据，用于空间分块评估，不进特征）
+        centroids = gdf.geometry.centroid
+        cell_xs = np.array([p.x for p in centroids], dtype=float)
+        cell_ys = np.array([p.y for p in centroids], dtype=float)
+
         # 提取拓扑特征
         _, X_mat, cols = get_topology_matrix(gdf)
 
@@ -203,6 +242,8 @@ def build_agent_training_data(
                     row[col] = float(nbr_feat[i, j])
 
             row["period"] = period_name
+            row["cell_x"] = float(cell_xs[i])
+            row["cell_y"] = float(cell_ys[i])
             row["betweenness"] = bc_val
             row["log1p_betweenness"] = np.log1p(bc_val)
             all_rows.append(row)
@@ -255,9 +296,8 @@ def train_agent_model(
       - 增大模型容量 + early stopping
       - 多维度评估（R²、MAE、分类准确率）
     """
-    # 确定特征列
-    exclude_cols = {"period", "betweenness", "log1p_betweenness", "log_betweenness"}
-    feature_cols = [c for c in df.columns if c not in exclude_cols]
+    # 确定特征列（元数据列统一排除）
+    feature_cols = _feature_cols(df)
     logger.info("使用特征: %d 个", len(feature_cols))
     logger.info("特征列表: %s", feature_cols)
 
@@ -275,19 +315,7 @@ def train_agent_model(
         X_train, y_train, test_size=0.15, random_state=42
     )
 
-    model = xgb.XGBRegressor(
-        n_estimators=800,
-        max_depth=8,
-        learning_rate=0.02,
-        subsample=0.8,
-        colsample_bytree=0.7,
-        reg_alpha=0.05,
-        reg_lambda=1.0,
-        min_child_weight=3,
-        gamma=0.05,
-        random_state=42,
-        verbosity=0,
-    )
+    model = xgb.XGBRegressor(**AGENT_XGB_PARAMS)
 
     model.fit(
         X_train_sub, y_train_sub,
