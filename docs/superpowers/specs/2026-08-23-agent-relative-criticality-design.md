@@ -49,9 +49,9 @@ def compute_graph_features(gdf) -> Tuple[np.ndarray, List[str]]:
 def period_robust_scale(df, period_col="period",
                         target_col="log1p_betweenness",
                         exclude_cols=None) -> pd.DataFrame:
-    """数值特征列按期 median/IQR 标准化（原地替换，元数据列除外）；
+    """数值特征列按期 median/IQR 标准化（标准化值覆盖同名列，元数据列除外）；
     标签按期 z-score 写入新列 bc_rel。IQR=0 的列回退除以 std=1。
-    返回新 df（不改入参）。"""
+    返回标准化后的副本 df，不修改调用方传入的 df。"""
 
 def add_multiscale_features(df, step=3000.0, scales=(2, 4),
                             topo_cols=None) -> pd.DataFrame:
@@ -71,7 +71,7 @@ def add_multiscale_features(df, step=3000.0, scales=(2, 4),
 
 ### 4.2 `agent_model.py` 编排改动
 
-- `build_agent_training_data`：每期循环内调 `compute_graph_features(gdf)` 并入行数据；df 构建完成后依次调 `period_robust_scale(df)` 与 `add_multiscale_features(df)`。
+- `build_agent_training_data`：每期循环内调 `compute_graph_features(gdf)` 并入行数据；df 构建完成后依次调 `period_robust_scale(df)` 与 `add_multiscale_features(df, step=<config grid.step_m>)`——步长取自 config.yaml（延续 M5 配置化成果），缺省回退 `GRID_STEP`。
 - 训练目标默认改为 `target_col="bc_rel"`；`AGENT_EXCLUDE_COLS` 增补 `"bc_rel"`。
 - `train_agent_model` / `spatial_cv_evaluate` / `leave_one_period_out_evaluate` 签名不变（已有 target_col 参数）。
 - `run_agent_pipeline()` 无参调用路径与返回 dict 结构兼容（main.py:695/2831 不改）。
