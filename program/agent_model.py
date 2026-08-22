@@ -725,12 +725,35 @@ def run_agent_pipeline(
     # 2) 训练
     result = train_agent_model(df)
 
-    # 3) 导出
+    # 3) 诚实评估：随机划分 vs 空间块 CV vs 留一期外推
+    spatial_cv = spatial_cv_evaluate(df)
+    lopo = leave_one_period_out_evaluate(df)
+    result["spatial_cv"] = spatial_cv
+    result["lopo"] = lopo
+
+    logger.info("=== 诚实评估对比 ===")
+    logger.info("  随机划分 R²: %.4f（相邻网格泄漏，可能虚高）", result["metrics"]["r2"])
+    if spatial_cv:
+        logger.info("  空间块 CV R²: %.4f±%.4f", spatial_cv["r2_mean"], spatial_cv["r2_std"])
+    if lopo:
+        logger.info("  留一期外推 R²: %.4f±%.4f（跨期泛化）", lopo["r2_mean"], lopo["r2_std"])
+
+    summary = {
+        "random_split": dict(result["metrics"]),
+        "spatial_cv": spatial_cv,
+        "lopo": lopo,
+    }
+    eval_json = os.path.join(out_dir, "agent_eval_summary.json")
+    with open(eval_json, "w", encoding="utf-8") as f:
+        json.dump(summary, f, ensure_ascii=False, indent=2)
+    logger.info("诚实评估摘要: %s", eval_json)
+
+    # 4) 导出
     imp_csv = os.path.join(out_dir, "agent_feature_importance.csv")
     result["feature_importance"].to_csv(imp_csv, index=False, encoding="utf-8-sig")
     logger.info("特征重要性: %s", imp_csv)
 
-    # 4) 可视化
+    # 5) 可视化
     plot_paths = plot_agent_results(result, out_dir)
     for k, v in plot_paths.items():
         logger.info("  %s: %s", k, v)
