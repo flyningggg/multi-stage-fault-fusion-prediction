@@ -24,6 +24,14 @@ export_grid:
   out_gpkg: true
   gpkg_layer: "grid_topology"
 
+# 网格与空间容差（Stage 2 叠加 / Stage 3 渗流）
+grid:
+  step_m: 3000.0                   # 网格步长 (m)
+  edge_dist_tolerance_m: 150.0     # 邻接判定坐标容差 (m)
+  centroid_match_tolerance_m: 1500.0  # 三期叠加 centroid 匹配容差（半步长）
+  target_eps_m: 4500.0             # 靶区 DBSCAN eps（1.5 倍步长）
+  target_min_cluster_size: 3       # 靶区最小簇样本数
+
 # 聚类/降维
 clustering:
   n_clusters: 4
