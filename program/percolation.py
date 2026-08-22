@@ -26,6 +26,12 @@ _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 if _THIS_DIR not in sys.path:
     sys.path.insert(0, _THIS_DIR)
 
+try:
+    from utils.config_loader import load_config
+except ImportError:
+    def load_config(config_path=None):
+        return {}
+
 from multiperiod_data import (
     load_all_periods, load_period_csv,
     get_topology_matrix, TOPOLOGY_ATTRIBUTES,
@@ -493,14 +499,23 @@ def run_percolation_pipeline(
 
     logger.info("=== Stage 3: 图渗流模拟 ===")
 
+    cfg = load_config()
+    grid_cfg = cfg.get("grid", {}) if isinstance(cfg, dict) else {}
+
     period_gdfs = load_all_periods()
     results = {}
 
     for period_name, gdf in period_gdfs.items():
         logger.info("--- %s ---", period_name)
 
-        # 1) 构建图
-        G = build_grid_graph(gdf, edge_weight_col=edge_weight_col, weight_mode="min")
+        # 1) 构建图（步长/容差可经 config.yaml grid 段覆盖）
+        G = build_grid_graph(
+            gdf,
+            edge_weight_col=edge_weight_col,
+            weight_mode="min",
+            grid_step=float(grid_cfg.get("step_m", GRID_STEP)),
+            edge_dist_tolerance=float(grid_cfg.get("edge_dist_tolerance_m", EDGE_DIST_TOLERANCE)),
+        )
 
         # 2) 渗流模拟
         fractions, sizes, threshold = simulate_percolation(G, n_steps=n_steps)
