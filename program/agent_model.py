@@ -78,6 +78,34 @@ def _feature_cols(df) -> List[str]:
     return [c for c in df.columns if c not in AGENT_EXCLUDE_COLS]
 
 
+def _build_block_ids(cell_x: np.ndarray, cell_y: np.ndarray,
+                     n_blocks: int = 9) -> Optional[np.ndarray]:
+    """
+    等宽分箱空间分块（与 ml/train._build_spatial_block_ids 同算法，通用坐标版）。
+    坐标 x/y 各分 n_side 箱，组合成 n_side² 个空间块；
+    同一块的网格在空间块 CV 中始终同折，避免空间自相关泄漏。
+    无空间差异（<2 唯一块）时返回 None。
+    """
+    if len(cell_x) == 0 or len(cell_y) != len(cell_x):
+        return None
+    n_side = max(2, int(np.ceil(np.sqrt(max(2, int(n_blocks))))))
+    try:
+        xbin = pd.Series(pd.cut(cell_x, bins=n_side, labels=False, include_lowest=True),
+                         dtype="float64")
+        ybin = pd.Series(pd.cut(cell_y, bins=n_side, labels=False, include_lowest=True),
+                         dtype="float64")
+    except Exception:
+        return None
+    if xbin.isna().all() or ybin.isna().all():
+        return None
+    xbin = xbin.fillna(0).astype(int)
+    ybin = ybin.fillna(0).astype(int)
+    block_id = (xbin * n_side + ybin).to_numpy(dtype=np.int64)
+    if len(np.unique(block_id)) < 2:
+        return None
+    return block_id
+
+
 # ---------------------------------------------------------------------------
 # 空间特征工程
 # ---------------------------------------------------------------------------

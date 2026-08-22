@@ -41,3 +41,29 @@ def test_feature_cols_excludes_metadata():
     df = make_synth_df()
     feats = _feature_cols(df)
     assert feats == ["f1", "f2"]
+
+
+def _grid_xy(n_side=3, step=3000.0):
+    xs = np.repeat(np.arange(n_side) * step, n_side)
+    ys = np.tile(np.arange(n_side) * step, n_side)
+    return xs, ys
+
+
+def test_build_block_ids_grid_layout():
+    xs, ys = _grid_xy(3)
+    ids = _build_block_ids(xs, ys, n_blocks=9)
+    assert ids is not None
+    assert len(ids) == 9
+    assert len(set(ids.tolist())) == 9          # 每格一块
+    assert set(ids.tolist()) <= set(range(9))   # id 在 [0, n_side²)
+
+
+def test_build_block_ids_deterministic():
+    xs, ys = _grid_xy(3)
+    assert np.array_equal(_build_block_ids(xs, ys, 9), _build_block_ids(xs, ys, 9))
+
+
+def test_build_block_ids_degenerate_returns_none():
+    same_x = np.full(6, 100.0)
+    same_y = np.full(6, 200.0)
+    assert _build_block_ids(same_x, same_y, 9) is None  # 无空间差异 → 无法分块
