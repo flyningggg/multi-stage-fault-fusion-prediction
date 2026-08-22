@@ -106,6 +106,67 @@ def _build_block_ids(cell_x: np.ndarray, cell_y: np.ndarray,
     return block_id
 
 
+def spatial_cv_evaluate(
+    df,
+    target_col: str = "log1p_betweenness",
+    n_blocks: int = 9,
+    n_splits: int = 5,
+    xgb_params: Optional[Dict] = None,
+) -> Dict:
+    """
+    空间分块交叉验证：按空间块分组留一（GroupKFold），
+    消除随机划分中相邻网格自相关导致的 R² 虚高。
+    返回各折指标 mean±std 及块数/折数；无法分块时返回 {} 并告警。
+
+    ponytail: 折内不用早停（无内层验证集）；若空间 CV 明显劣化再考虑折内调参。
+    """
+    if not HAS_XGB:
+        raise ImportError("需要 xgboost")
+    from sklearn.model_selection import GroupKFold
+    from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
+
+    block_id = _build_block_ids(
+        pd.to_numeric(df["cell_x"], errors="coerce").to_numpy(dtype=float),
+        pd.to_numeric(df["cell_y"], errors="coerce").to_numpy(dtype=float),
+        n_blocks,
+    )
+    if block_id is None:
+        logger.warning("spatial_cv_evaluate: 无法构建空间块，跳过")
+        return {}
+
+    params = dict(AGENT_XGB_PARAMS)
+    if xgb_params:
+        params.update(xgb_params)
+
+    feats = _feature_cols(df)
+    X = df[feats].to_numpy(dtype=float)
+    y = df[target_col].to_numpy(dtype=float)
+
+    uniq = np.unique(block_id)
+    n_use = int(min(max(2, int(n_splits)), len(uniq)))
+    gkf = GroupKFold(n_splits=n_use)
+
+    fold_metrics: List[Dict[str, float]] = []
+    for tr_idx, te_idx in gkf.split(X, y, groups=block_id):
+        m = xgb.XGBRegressor(**params)
+        m.fit(X[tr_idx], y[tr_idx])
+        pred = m.predict(X[te_idx])
+        fold_metrics.append({
+            "r2": r2_score(y[te_idx], pred),
+            "rmse": float(np.sqrt(mean_squared_error(y[te_idx], pred))),
+            "mae": mean_absolute_error(y[te_idx], pred),
+        })
+
+    out: Dict = {"n_blocks_used": int(len(uniq)), "n_splits_used": n_use}
+    for k in ("r2", "rmse", "mae"):
+        vals = np.array([fm[k] for fm in fold_metrics], dtype=float)
+        out[f"{k}_mean"] = float(np.mean(vals))
+        out[f"{k}_std"] = float(np.std(vals))
+    logger.info("空间块 CV: R²=%.4f±%.4f (blocks=%d, splits=%d)",
+                out["r2_mean"], out["r2_std"], out["n_blocks_used"], out["n_splits_used"])
+    return out
+
+
 # ---------------------------------------------------------------------------
 # 空间特征工程
 # ---------------------------------------------------------------------------

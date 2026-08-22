@@ -9,6 +9,7 @@ from agent_model import (
     AGENT_EXCLUDE_COLS,
     _build_block_ids,
     _feature_cols,
+    spatial_cv_evaluate,
 )
 
 FAST_XGB = {"n_estimators": 10, "max_depth": 2, "verbosity": 0}
@@ -68,3 +69,15 @@ def test_build_block_ids_degenerate_returns_none():
     same_x = np.full(6, 100.0)
     same_y = np.full(6, 200.0)
     assert _build_block_ids(same_x, same_y, 9) is None  # 无空间差异 → 无法分块
+
+
+def test_spatial_cv_returns_aggregates():
+    df = make_synth_df()
+    out = spatial_cv_evaluate(df, n_blocks=9, n_splits=3, xgb_params=FAST_XGB)
+    for key in ["r2_mean", "r2_std", "rmse_mean", "rmse_std",
+                "mae_mean", "mae_std", "n_blocks_used", "n_splits_used"]:
+        assert key in out, f"缺少 {key}"
+        assert np.isfinite(out[key]), f"{key} 非有限值: {out[key]}"
+    assert out["n_blocks_used"] >= 2
+    assert 2 <= out["n_splits_used"] <= 3
+    assert -1.0 <= out["r2_mean"] <= 1.0
