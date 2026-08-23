@@ -354,7 +354,7 @@ def build_agent_training_data(
 
         # 计算 betweenness（精确计算，避免近似误差）
         n_nodes = G.number_of_nodes()
-        bc_raw = nx.betweenness_centrality(G, weight="weight",
+        bc_raw = nx.betweenness_centrality(G, weight="distance",
                                             normalized=False)
         logger.info("  精确 betweenness 计算完成: %d 节点", n_nodes)
 

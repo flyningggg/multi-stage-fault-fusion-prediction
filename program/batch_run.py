@@ -122,6 +122,106 @@ except ImportError:
     HAS_XGB = False
 
 
+STAGE1_XGB_PARAMS = {
+    "n_estimators": 100,
+    "max_depth": 4,
+    "learning_rate": 0.05,
+    "random_state": 42,
+    "verbosity": 0,
+}
+
+
+def _build_spatial_block_ids(
+    xs: np.ndarray,
+    ys: np.ndarray,
+    n_blocks: int = 9,
+) -> Optional[np.ndarray]:
+    """按坐标等宽分箱构造空间块；退化坐标返回 None。"""
+    xs = np.asarray(xs, dtype=float)
+    ys = np.asarray(ys, dtype=float)
+    if xs.shape != ys.shape or xs.ndim != 1 or xs.size < 2:
+        return None
+    if not np.isfinite(xs).all() or not np.isfinite(ys).all():
+        return None
+    if np.ptp(xs) <= 0 or np.ptp(ys) <= 0:
+        return None
+
+    n_side = max(2, int(np.ceil(np.sqrt(max(2, n_blocks)))))
+    x_bin = pd.cut(xs, bins=n_side, labels=False, include_lowest=True, duplicates="drop")
+    y_bin = pd.cut(ys, bins=n_side, labels=False, include_lowest=True, duplicates="drop")
+    if pd.isna(x_bin).any() or pd.isna(y_bin).any():
+        return None
+
+    groups = np.asarray(y_bin, dtype=int) * n_side + np.asarray(x_bin, dtype=int)
+    return groups if np.unique(groups).size >= 2 else None
+
+
+def _spatial_cv_xgboost(
+    X: np.ndarray,
+    y: np.ndarray,
+    xs: np.ndarray,
+    ys: np.ndarray,
+    *,
+    n_blocks: int = 9,
+    n_splits: int = 5,
+    model_params: Optional[dict] = None,
+) -> dict:
+    """按空间块执行 GroupKFold，返回均值、波动和明确状态。"""
+    from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+    from sklearn.model_selection import GroupKFold
+
+    X = np.asarray(X, dtype=float)
+    y = np.asarray(y, dtype=float)
+    if X.ndim != 2 or y.ndim != 1 or len(X) != len(y) or len(y) < 4:
+        return {"status": "invalid_input", "n_splits_used": 0}
+    if not np.isfinite(X).all() or not np.isfinite(y).all():
+        return {"status": "non_finite_input", "n_splits_used": 0}
+    if np.ptp(y) <= 1e-12:
+        return {"status": "constant_target", "n_splits_used": 0}
+
+    groups = _build_spatial_block_ids(xs, ys, n_blocks=n_blocks)
+    if groups is None:
+        return {"status": "insufficient_spatial_blocks", "n_splits_used": 0}
+
+    unique_groups = np.unique(groups)
+    splits = min(int(n_splits), int(unique_groups.size))
+    if splits < 2:
+        return {"status": "insufficient_spatial_blocks", "n_splits_used": 0}
+
+    params = dict(STAGE1_XGB_PARAMS)
+    if model_params:
+        params.update(model_params)
+
+    fold_metrics = []
+    for train_idx, test_idx in GroupKFold(n_splits=splits).split(X, y, groups):
+        if len(test_idx) < 2 or np.ptp(y[test_idx]) <= 1e-12:
+            return {
+                "status": "degenerate_test_fold",
+                "n_blocks_used": int(unique_groups.size),
+                "n_splits_used": splits,
+            }
+        model = xgb.XGBRegressor(**params)
+        model.fit(X[train_idx], y[train_idx])
+        pred = model.predict(X[test_idx])
+        fold_metrics.append({
+            "r2": float(r2_score(y[test_idx], pred)),
+            "rmse": float(np.sqrt(mean_squared_error(y[test_idx], pred))),
+            "mae": float(mean_absolute_error(y[test_idx], pred)),
+        })
+
+    result = {
+        "status": "ok",
+        "n_blocks_used": int(unique_groups.size),
+        "n_splits_used": splits,
+        "folds": fold_metrics,
+    }
+    for metric in ("r2", "rmse", "mae"):
+        values = np.asarray([row[metric] for row in fold_metrics], dtype=float)
+        result[f"{metric}_mean"] = float(np.mean(values))
+        result[f"{metric}_std"] = float(np.std(values))
+    return result
+
+
 def _prepare_multiperiod_data():
     """加载三期数据并提取拓扑属性矩阵。"""
     from multiperiod_data import load_all_periods
@@ -169,7 +269,7 @@ def _run_weighted_fusion(data: dict, high_value_weight: float = 1.5) -> dict:
 
 
 def _run_xgboost_importance(data: dict, out_dir: str) -> dict:
-    """对每期数据，用6个拓扑属性预测 Fracture Intensity B21，提取特征重要性。"""
+    """训练全量模型提取重要性，并用空间块 CV 评估泛化。"""
     xgb_results = {}
     for period_name, d in data.items():
         gdf = d["gdf"]
@@ -191,14 +291,18 @@ def _run_xgboost_importance(data: dict, out_dir: str) -> dict:
             xgb_results[period_name] = None
             continue
 
-        model = xgb.XGBRegressor(
-            n_estimators=100, max_depth=4, learning_rate=0.05,
-            random_state=42, verbosity=0,
-        )
+        model = xgb.XGBRegressor(**STAGE1_XGB_PARAMS)
         model.fit(X_valid, y_valid)
         importance = model.feature_importances_
         pred = model.predict(X)
-        r2 = float(1 - ((y - pred) ** 2).sum() / max(((y - y.mean()) ** 2).sum(), 1e-10))
+        train_pred = model.predict(X_valid)
+        from sklearn.metrics import r2_score
+        train_r2 = float(r2_score(y_valid, train_pred))
+
+        centroids = gdf.geometry.centroid
+        xs = np.asarray([p.x for p in centroids], dtype=float)[mask]
+        ys = np.asarray([p.y for p in centroids], dtype=float)[mask]
+        spatial_cv = _spatial_cv_xgboost(X_valid, y_valid, xs, ys)
 
         imp_df = pd.DataFrame({"属性": cols, "importance": importance})
         imp_df.sort_values("importance", ascending=False, inplace=True)
@@ -206,11 +310,28 @@ def _run_xgboost_importance(data: dict, out_dir: str) -> dict:
         xgb_results[period_name] = {
             "model": model,
             "importance": imp_df,
-            "r2": r2,
+            "r2": train_r2,  # 向后兼容；仅表示训练拟合，不作泛化主指标
+            "train_r2": train_r2,
+            "spatial_cv": spatial_cv,
             "predictions": pred,
         }
-        logger.info("%s XGBoost R²=%.3f  top1=%s(%.3f)", period_name, r2,
-                    imp_df.iloc[0]["属性"], imp_df.iloc[0]["importance"])
+        if spatial_cv.get("status") == "ok":
+            logger.info(
+                "%s XGBoost 训练拟合R²=%.3f  空间CV R²=%.3f±%.3f  top1=%s(%.3f)",
+                period_name,
+                train_r2,
+                spatial_cv["r2_mean"],
+                spatial_cv["r2_std"],
+                imp_df.iloc[0]["属性"],
+                imp_df.iloc[0]["importance"],
+            )
+        else:
+            logger.warning(
+                "%s XGBoost 训练拟合R²=%.3f，空间CV不可用: %s",
+                period_name,
+                train_r2,
+                spatial_cv.get("status"),
+            )
     return xgb_results
 
 
@@ -271,7 +392,14 @@ def _plot_xgboost_importance(xgb_results: dict, out_dir: str) -> str:
         for period_name in periods:
             imp = xgb_results[period_name]["importance"]
             ax.barh(imp["属性"], imp["importance"], color="#4C72B0", alpha=0.8)
-            ax.set_title(f"{period_name} XGBoost 特征重要性 (R²={xgb_results[period_name]['r2']:.3f})")
+            result = xgb_results[period_name]
+            cv = result["spatial_cv"]
+            metric_text = (
+                f"空间CV R²={cv['r2_mean']:.3f}"
+                if cv.get("status") == "ok"
+                else f"训练拟合 R²={result['train_r2']:.3f}"
+            )
+            ax.set_title(f"{period_name} XGBoost 特征重要性 ({metric_text})")
         ax.set_xlabel("重要性")
         ax.grid(True, alpha=0.3)
         plt.tight_layout()
@@ -291,9 +419,15 @@ def _plot_xgboost_importance(xgb_results: dict, out_dir: str) -> str:
         imp = xgb_results[period_name]["importance"]
         vals = [float(imp.loc[imp["属性"] == a, "importance"].iloc[0])
                 if a in imp["属性"].values else 0.0 for a in all_attrs]
-        r2 = xgb_results[period_name]["r2"]
+        result = xgb_results[period_name]
+        cv = result["spatial_cv"]
+        metric_text = (
+            f"空间CV R²={cv['r2_mean']:.3f}"
+            if cv.get("status") == "ok"
+            else f"训练拟合 R²={result['train_r2']:.3f}"
+        )
         ax.bar(x + i * width, vals, width, color=colors[i], alpha=0.85,
-               label=f"{period_name} (R²={r2:.3f})")
+               label=f"{period_name} ({metric_text})")
     ax.set_xticks(x + width * (n_periods - 1) / 2)
     ax.set_xticklabels(all_attrs, rotation=25, ha="right", fontsize=10)
     ax.set_ylabel("特征重要性")
@@ -362,13 +496,24 @@ def run_multiperiod_fusion(
         pca_r = pca_results[period_name]
         w_score = weighted_results[period_name]
         xgb_r = xgb_results.get(period_name)
+        spatial_cv = xgb_r["spatial_cv"] if xgb_r else {}
         summary_rows.append({
             "时期": period_name,
             "网格数": len(gdf),
             "非零网格": int((d["X"].sum(axis=1) > 0).sum()),
             "PCA Silhouette": round(pca_r["quality"].get("silhouette_score", 0), 4),
             "加权得分均值": round(float(w_score.mean()), 4),
-            "XGBoost R²": round(xgb_r["r2"], 4) if xgb_r else None,
+            "XGBoost训练拟合R²": round(xgb_r["train_r2"], 4) if xgb_r else None,
+            "XGBoost空间CV_R²均值": (
+                round(spatial_cv["r2_mean"], 4)
+                if spatial_cv.get("status") == "ok" else None
+            ),
+            "XGBoost空间CV_R²标准差": (
+                round(spatial_cv["r2_std"], 4)
+                if spatial_cv.get("status") == "ok" else None
+            ),
+            "XGBoost空间CV折数": spatial_cv.get("n_splits_used", 0),
+            "XGBoost空间CV状态": spatial_cv.get("status") if xgb_r else "not_run",
         })
     summary_df = pd.DataFrame(summary_rows)
     summary_path = os.path.join(out_dir, "multiperiod_fusion_summary.csv")

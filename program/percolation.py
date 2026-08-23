@@ -52,6 +52,38 @@ except ImportError:
 # ---------------------------------------------------------------------------
 GRID_STEP = 3000.0        # 网格步长 (m)
 EDGE_DIST_TOLERANCE = 150.0  # 邻接判定的坐标容差 (m)
+PATH_RESISTANCE_EPS = 1e-12  # 容量转最短路径阻抗时防止除零
+
+
+def capacity_to_distance(capacity, eps: float = PATH_RESISTANCE_EPS):
+    """将非负连通能力转换为最短路径阻抗。
+
+    NetworkX 的加权最短路径将 ``weight`` 解释为距离/成本；而 NC_A 等
+    指标表示连通能力，数值越大应越容易通过。因此路径计算使用其倒数，
+    零或负容量按零容量处理并得到很大的有限阻抗。
+    """
+    values = np.asarray(capacity, dtype=float)
+    distances = 1.0 / (np.maximum(values, 0.0) + float(eps))
+    if distances.ndim == 0:
+        return float(distances)
+    return distances
+
+
+def _path_distance_attr(G: "nx.Graph") -> str:
+    """确保图的每条边都有 distance 属性，并返回该属性名。"""
+    for _, _, data in G.edges(data=True):
+        if "distance" not in data:
+            capacity = data.get("capacity", data.get("weight", 0.0))
+            data["distance"] = capacity_to_distance(capacity)
+    return "distance"
+
+
+def _capacity_attr(G: "nx.Graph") -> str:
+    """确保每条边都有 capacity，兼容旧图和混合属性图。"""
+    for _, _, data in G.edges(data=True):
+        if "capacity" not in data:
+            data["capacity"] = float(data.get("weight", 0.0))
+    return "capacity"
 
 
 def build_grid_graph(
@@ -74,7 +106,8 @@ def build_grid_graph(
     返回：
       networkx.Graph
         - 节点属性: pos=(x, y), weight=该网格的拓扑属性值
-        - 边属性:   weight=min(两节点连通性), frac_deleted=None
+        - 边属性:   capacity=min(两节点连通性), distance=1/(capacity+eps)
+                    weight 保留为 capacity 的兼容别名
 
     4邻接判定：两网格 centroid 在 X 方向差 3000m 且 Y 方向差约 0，
     或在 Y 方向差 3000m 且 X 方向差约 0。
@@ -127,7 +160,14 @@ def build_grid_graph(
                     w = min(w_i, w_j)
                 else:
                     w = (w_i + w_j) / 2.0
-                G.add_edge(i, j, weight=w, frac_deleted=None)
+                G.add_edge(
+                    i,
+                    j,
+                    weight=w,  # 向后兼容：历史调用将 weight 作为连通能力
+                    capacity=w,
+                    distance=capacity_to_distance(w),
+                    frac_deleted=None,
+                )
 
     # 过滤孤立节点（degree=0 的节点对渗流无意义，但保留用于完整计数）
     n_edges = G.number_of_edges()
@@ -188,7 +228,8 @@ def simulate_percolation(
       sizes:      (n_steps+1,) 最大连通分量节点占比
       threshold:  渗流阈值（最大分量跌至 50% 时的删边占比）
     """
-    edges = sorted(G.edges(data="weight"), key=lambda e: e[2])
+    capacity_attr = _capacity_attr(G)
+    edges = sorted(G.edges(data=capacity_attr), key=lambda e: e[2])
     total_edges = len(edges)
     total_nodes = G.number_of_nodes()
 
@@ -321,11 +362,17 @@ def identify_key_nodes(
 
     # 计算中心性
     if use_pagerank:
-        centrality = nx.pagerank(G, weight="weight", alpha=0.85)
+        centrality = nx.pagerank(G, weight=_capacity_attr(G), alpha=0.85)
         metric_name = "pagerank"
     else:
         k = min(k_sample, n_nodes)
-        centrality = nx.betweenness_centrality(G, k=k, weight="weight", normalized=True, seed=42)
+        centrality = nx.betweenness_centrality(
+            G,
+            k=k,
+            weight=_path_distance_attr(G),
+            normalized=True,
+            seed=42,
+        )
         metric_name = "betweenness"
 
     # 排除边界节点

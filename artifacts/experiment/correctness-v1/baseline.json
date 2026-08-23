@@ -1,0 +1,26 @@
+{
+  "commit": "d74e669c63e1f3cde21eafbb039023fb53ff0ef5",
+  "tests": {
+    "passed": 55,
+    "command": "python -m pytest tests -q -p no:cacheprovider"
+  },
+  "stage1_train_fit_r2": {
+    "海西期": 0.2537,
+    "喜山期": 0.4693,
+    "印支燕山期": 0.6651,
+    "warning": "These values were computed on the same data used for fitting and are not generalization metrics."
+  },
+  "stage3": {
+    "海西期": {"pc50": 0.49, "steepest": 0.31},
+    "喜山期": {"pc50": 0.51, "steepest": 1.0},
+    "印支燕山期": {"pc50": 0.51, "steepest": 0.66}
+  },
+  "stage4": {
+    "random_split_r2": 0.7787984411791284,
+    "spatial_cv_r2_mean": 0.4239160874702014,
+    "spatial_cv_r2_std": 0.18660635591197125,
+    "lopo_r2_mean": -0.7846504729262298,
+    "lopo_r2_std": 0.7067442719295656,
+    "label_weight_semantics": "capacity was incorrectly used as shortest-path distance"
+  }
+}

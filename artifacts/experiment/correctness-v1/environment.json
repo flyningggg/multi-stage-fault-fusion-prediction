@@ -1,0 +1,15 @@
+{
+  "timestamp_utc": "2026-08-23T05:45:16.344055+00:00",
+  "python": "3.12.7 (tags/v3.12.7:0b05ead, Oct  1 2024, 03:06:41) [MSC v.1941 64 bit (AMD64)]",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "git_commit": "d74e669c63e1f3cde21eafbb039023fb53ff0ef5",
+  "versions": {
+    "numpy": "1.26.4",
+    "pandas": "2.3.3",
+    "sklearn": "1.8.0",
+    "networkx": "3.6.1",
+    "xgboost": "3.2.0"
+  },
+  "random_state": 42,
+  "config": "C:\\Users\\（-1，0）\\Documents\\Reproduction and Calibration Analysis of Contrastive Multimodal Sentiment Detection\\worktrees\\fault-fusion-correctness\\program\\config.yaml"
+}
