@@ -1,0 +1,24 @@
+{
+  "run_id": "screening-20260823-182509-96571404",
+  "timestamp_utc": "2026-08-23T10:25:55.764181+00:00",
+  "python": "3.12.13 (main, Aug  7 2026, 02:26:41) [MSC v.1944 64 bit (AMD64)]",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "config_path": "C:\\Users\\（-1，0）\\Documents\\Reproduction and Calibration Analysis of Contrastive Multimodal Sentiment Detection\\worktrees\\fault-fusion-correctness\\program\\config.yaml",
+  "config_hash_sha256": "1cd1f41566da77c4064bb753a7311c72df6df6e1f97b8173121b895db9c71c26",
+  "period_metric_config_sha256": "13a4c8835ba1c0a1a6595a6435c29c31cb3d40d25e539b6809985851dc258071",
+  "distance_transforms": [
+    "inverse",
+    "inverse_sqrt",
+    "neglog"
+  ],
+  "top_fraction": 0.2,
+  "score_weights": {
+    "network_criticality": 0.35,
+    "removal_impact": 0.25,
+    "period_persistence": 0.25,
+    "parameter_stability": 0.15
+  },
+  "elapsed_seconds": 45.77629109995905,
+  "status": "completed",
+  "reused_period_metrics_from": "C:\\Users\\（-1，0）\\Documents\\Reproduction and Calibration Analysis of Contrastive Multimodal Sentiment Detection\\worktrees\\fault-fusion-correctness\\artifacts\\experiment\\target-screening-mvp-v1\\real_run"
+}

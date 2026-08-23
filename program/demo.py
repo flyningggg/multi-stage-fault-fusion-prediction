@@ -6,7 +6,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1400, 900)
-        MainWindow.setWindowTitle("油气区断裂网络连通性智能分析与预测系统 v2.0")
+        MainWindow.setWindowTitle("多期断裂网络勘探有利区辅助筛选系统 v2.1")
         self.centralwidget = QtWidgets.QWidget(MainWindow)
 
         # 主布局 (垂直)
@@ -27,10 +27,12 @@ class Ui_MainWindow(object):
         self.btn_cancel_task.setToolTip("取消正在后台执行的长任务")
         self.btn_export_results = QtWidgets.QPushButton("导出结果")
         self.btn_export_results.setToolTip("汇总显示最近一次运行的导出文件路径")
+        self.btn_toggle_run_info = QtWidgets.QPushButton("隐藏运行信息")
+        self.btn_toggle_run_info.setToolTip("显示或收起底部结果摘要与运行日志")
 
         _toolbar_btn_style = "QPushButton { font-size: 12px; padding: 4px 10px; }"
         for btn in [self.btn_open_model_dir, self.btn_open_processed_dir,
-                    self.btn_cancel_task, self.btn_export_results]:
+                    self.btn_cancel_task, self.btn_export_results, self.btn_toggle_run_info]:
             btn.setMinimumHeight(30)
             btn.setMaximumHeight(34)
             btn.setStyleSheet(_toolbar_btn_style)
@@ -38,6 +40,82 @@ class Ui_MainWindow(object):
 
         self.toolbar_layout.addStretch()
         self.main_vbox.addLayout(self.toolbar_layout)
+
+        # ==========================================
+        # 正式主流程入口：全局唯一主操作
+        # ==========================================
+        self.screening_banner = QtWidgets.QFrame()
+        self.screening_banner.setObjectName("screeningBanner")
+        self.screening_banner.setStyleSheet("""
+            QFrame#screeningBanner {
+                background-color: #e9f1f0;
+                border: 1px solid #b8cecb;
+                border-radius: 10px;
+            }
+            QLabel#screeningEyebrow {
+                color: #526b68;
+                font-size: 11px;
+                font-weight: bold;
+            }
+            QLabel#screeningTitle {
+                color: #203b3a;
+                font-size: 18px;
+                font-weight: bold;
+            }
+            QLabel#screeningSubtitle {
+                color: #607472;
+                font-size: 12px;
+            }
+            QLabel#screeningStatus {
+                background-color: #f7faf9;
+                color: #4c6663;
+                border: 1px solid #c7d7d4;
+                border-radius: 11px;
+                padding: 4px 10px;
+                font-size: 11px;
+                font-weight: bold;
+            }
+            QPushButton#primaryScreeningButton {
+                background-color: #356f70;
+                color: white;
+                border: none;
+                border-radius: 7px;
+                padding: 10px 22px;
+                font-size: 15px;
+                font-weight: bold;
+            }
+            QPushButton#primaryScreeningButton:hover { background-color: #2d6162; }
+            QPushButton#primaryScreeningButton:pressed { background-color: #264f50; }
+            QPushButton#primaryScreeningButton:disabled { background-color: #9fb4b2; }
+        """)
+        self.screening_banner_layout = QtWidgets.QHBoxLayout(self.screening_banner)
+        self.screening_banner_layout.setContentsMargins(18, 10, 14, 10)
+        self.screening_banner_layout.setSpacing(14)
+        self.screening_text_layout = QtWidgets.QVBoxLayout()
+        self.screening_text_layout.setSpacing(1)
+        self.screening_eyebrow = QtWidgets.QLabel("正式分析主流程")
+        self.screening_eyebrow.setObjectName("screeningEyebrow")
+        self.screening_title = QtWidgets.QLabel("多期断裂网络候选勘探有利区筛选")
+        self.screening_title.setObjectName("screeningTitle")
+        self.screening_subtitle = QtWidgets.QLabel(
+            "精确拓扑 · 跨期匹配 · 稳定性分级 · 证据卡与GIS图层导出"
+        )
+        self.screening_subtitle.setObjectName("screeningSubtitle")
+        self.screening_text_layout.addWidget(self.screening_eyebrow)
+        self.screening_text_layout.addWidget(self.screening_title)
+        self.screening_text_layout.addWidget(self.screening_subtitle)
+        self.screening_banner_layout.addLayout(self.screening_text_layout, 1)
+        self.screening_status_label = QtWidgets.QLabel("尚未运行")
+        self.screening_status_label.setObjectName("screeningStatus")
+        self.screening_status_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.btn_primary_screening = QtWidgets.QPushButton("生成候选勘探有利区  →")
+        self.btn_primary_screening.setObjectName("primaryScreeningButton")
+        self.btn_primary_screening.setMinimumHeight(44)
+        self.btn_primary_screening.setMinimumWidth(235)
+        self.btn_primary_screening.setToolTip("运行正式精确筛选流程；长任务可通过顶部“取消任务”停止")
+        self.screening_banner_layout.addWidget(self.screening_status_label)
+        self.screening_banner_layout.addWidget(self.btn_primary_screening)
+        self.main_vbox.addWidget(self.screening_banner)
 
         # ==========================================
         # 中部：左右分栏结构
@@ -183,26 +261,7 @@ class Ui_MainWindow(object):
         )
         self.left_panel_layout.addWidget(self.config_summary_browser)
 
-        # --- 运行日志 ---
-        self.log_title = QtWidgets.QLabel("运行日志")
-        self.log_title.setStyleSheet(
-            "font-size: 14px; font-weight: bold; color: #2c3e50; padding: 2px 4px;"
-        )
-        self.left_panel_layout.addWidget(self.log_title)
-
-        self.text_browser = QtWidgets.QTextBrowser(self.left_panel)
-        self.text_browser.setMinimumWidth(300)
-        self.text_browser.setStyleSheet(
-            "background-color: #f8f9fa; "
-            "color: #2c3e50; "
-            "border: 1px solid #dcdde1; "
-            "border-radius: 4px; "
-            "font-family: Consolas, 'Courier New', monospace; "
-            "font-size: 15px; "
-            "padding: 8px; "
-            "line-height: 1.5;"
-        )
-        self.left_panel_layout.addWidget(self.text_browser, 1)
+        self.left_panel_layout.addStretch(1)
 
         # --- 右侧面板：选项卡 + 画布 ---
         self.right_panel = QtWidgets.QWidget(self.splitter)
@@ -504,6 +563,20 @@ class Ui_MainWindow(object):
         self.btn_prev_fig = QtWidgets.QPushButton("◀ 上一张")
         self.btn_next_fig = QtWidgets.QPushButton("下一张 ▶")
         self.lbl_fig_status = QtWidgets.QLabel("第1张/共1张")
+        self.btn_fit_fig = QtWidgets.QPushButton("自适应：开")
+        self.btn_fit_fig.setCheckable(True)
+        self.btn_fit_fig.setChecked(True)
+        self.btn_fit_fig.setMinimumWidth(96)
+        self.btn_fit_fig.setStyleSheet("""
+            QPushButton {
+                color: #405957; background: #f5f8f7; border: 1px solid #cbd8d6;
+                border-radius: 4px; padding: 4px 10px; font-size: 12px;
+            }
+            QPushButton:checked {
+                color: #ffffff; background: #547f7d; border-color: #547f7d;
+            }
+        """)
+        self.btn_fit_fig.setToolTip("默认完整显示图件；取消后按原始尺寸显示并允许滚动")
         self.lbl_fig_status.setAlignment(QtCore.Qt.AlignCenter)
 
         _gallery_btn_style = "QPushButton { font-size: 12px; padding: 4px 10px; }"
@@ -511,6 +584,7 @@ class Ui_MainWindow(object):
         self.btn_next_fig.setStyleSheet(_gallery_btn_style)
         self.lbl_fig_status.setStyleSheet("font-size: 13px; color: #2c3e50;")
 
+        self.gallery_control_layout.addWidget(self.btn_fit_fig)
         self.gallery_control_layout.addStretch()
         self.gallery_control_layout.addWidget(self.btn_prev_fig)
         self.gallery_control_layout.addWidget(self.lbl_fig_status)
@@ -530,33 +604,61 @@ class Ui_MainWindow(object):
         self.canvas_display_layout.addStretch()
         self.right_panel_layout.addWidget(self.canvas_container, 1)
 
-        # --- 最近一次运行结果 ---
-        self.last_run_title = QtWidgets.QLabel("最近一次运行结果")
-        self.last_run_title.setStyleSheet(
-            "font-size: 14px; font-weight: bold; color: #2c3e50; padding: 2px 4px;"
-        )
-        self.right_panel_layout.addWidget(self.last_run_title)
-
-        self.last_run_browser = QtWidgets.QTextBrowser()
-        self.last_run_browser.setMinimumHeight(60)
-        self.last_run_browser.setMaximumHeight(80)
-        self.last_run_browser.setStyleSheet(
-            "background-color: #f5f9f4; "
-            "color: #2c3e50; "
-            "border: 1px solid #c8dcc4; "
-            "border-radius: 4px; "
-            "font-family: Consolas, 'Courier New', monospace; "
-            "font-size: 12px; "
-            "padding: 6px; "
-            "line-height: 1.35;"
-        )
-        self.right_panel_layout.addWidget(self.last_run_browser)
-
         # 按比例 25:75 分配左右
         self.splitter.setStretchFactor(0, 25)
         self.splitter.setStretchFactor(1, 75)
         self.splitter.setSizes([350, 1050])
         self.main_vbox.addWidget(self.splitter, 1)
+
+        # ==========================================
+        # 次级运行信息：摘要与日志共享一个可收起区域
+        # ==========================================
+        self.run_info_tabs = QtWidgets.QTabWidget()
+        self.run_info_tabs.setObjectName("runInfoTabs")
+        self.run_info_tabs.setMinimumHeight(105)
+        self.run_info_tabs.setMaximumHeight(155)
+        self.run_info_tabs.setStyleSheet("""
+            QTabWidget#runInfoTabs::pane {
+                border: 1px solid #d5dddc;
+                border-radius: 5px;
+                background: #fafcfb;
+            }
+            QTabBar::tab {
+                padding: 5px 16px;
+                color: #526260;
+                background: #edf2f1;
+                border: 1px solid #d5dddc;
+            }
+            QTabBar::tab:selected {
+                color: #244c4b;
+                background: #ffffff;
+                font-weight: bold;
+            }
+        """)
+        self.run_summary_tab = QtWidgets.QWidget()
+        self.run_summary_layout = QtWidgets.QVBoxLayout(self.run_summary_tab)
+        self.run_summary_layout.setContentsMargins(6, 6, 6, 6)
+        self.last_run_browser = QtWidgets.QTextBrowser()
+        self.last_run_browser.setPlaceholderText("完成一次分析后，这里显示关键结果、证据边界和导出位置。")
+        self.last_run_browser.setStyleSheet(
+            "background: transparent; color: #2c3e50; border: none; "
+            "font-family: 'Microsoft YaHei', sans-serif; font-size: 12px; padding: 2px;"
+        )
+        self.run_summary_layout.addWidget(self.last_run_browser)
+        self.run_info_tabs.addTab(self.run_summary_tab, "结果摘要")
+
+        self.run_log_tab = QtWidgets.QWidget()
+        self.run_log_layout = QtWidgets.QVBoxLayout(self.run_log_tab)
+        self.run_log_layout.setContentsMargins(6, 6, 6, 6)
+        self.text_browser = QtWidgets.QTextBrowser()
+        self.text_browser.setPlaceholderText("运行进度、诊断信息和错误详情会显示在这里。")
+        self.text_browser.setStyleSheet(
+            "background: transparent; color: #344443; border: none; "
+            "font-family: Consolas, 'Courier New', monospace; font-size: 12px; padding: 2px;"
+        )
+        self.run_log_layout.addWidget(self.text_browser)
+        self.run_info_tabs.addTab(self.run_log_tab, "运行日志")
+        self.main_vbox.addWidget(self.run_info_tabs)
 
         MainWindow.setCentralWidget(self.centralwidget)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)

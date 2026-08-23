@@ -2,6 +2,7 @@
 """grid 配置段键契约测试：钉住 config.yaml 与代码消费端的字段名契约。"""
 import os
 import yaml
+from utils.config_validation import validate_config
 
 _CONFIG_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -36,3 +37,13 @@ def test_grid_values_are_numbers():
     grid = _grid_cfg()
     for key in EXPECTED_KEYS:
         assert isinstance(grid[key], (int, float)), f"grid.{key} 必须是数值"
+
+
+def test_screening_config_contract_is_valid_and_keeps_experiments_visible():
+    with open(_CONFIG_PATH, "r", encoding="utf-8") as f:
+        cfg = yaml.safe_load(f) or {}
+    assert validate_config(cfg) == []
+    assert cfg["screening"]["distance_transforms"] == ["inverse", "inverse_sqrt", "neglog"]
+    assert abs(sum(cfg["screening"]["score_weights"].values()) - 1.0) < 1e-8
+    assert cfg["product"]["experimental_features_visible"] is True
+    assert "industry" not in cfg

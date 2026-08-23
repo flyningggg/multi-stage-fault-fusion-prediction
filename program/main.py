@@ -395,19 +395,34 @@ class StreamRedirector(QtCore.QObject):
 class TaskRunner(QtCore.QThread):
     finished_ok = QtCore.pyqtSignal(object)
     failed = QtCore.pyqtSignal(str)
+    progress = QtCore.pyqtSignal(str)
 
-    def __init__(self, fn, *args, **kwargs):
+    def __init__(self, fn, *args, inject_progress=False, **kwargs):
         super().__init__()
         self._fn = fn
         self._args = args
         self._kwargs = kwargs
+        self._inject_progress = bool(inject_progress)
 
     def run(self):
         try:
-            out = self._fn(*self._args, **self._kwargs)
+            kwargs = dict(self._kwargs)
+            if self._inject_progress:
+                kwargs["progress_callback"] = self._report_progress
+            out = self._fn(*self._args, **kwargs)
+            if self.isInterruptionRequested():
+                self.failed.emit("任务已取消")
+                return
             self.finished_ok.emit(out)
+        except InterruptedError:
+            self.failed.emit("任务已取消")
         except Exception as e:
             self.failed.emit(str(e))
+
+    def _report_progress(self, message):
+        if self.isInterruptionRequested():
+            raise InterruptedError("任务已取消")
+        self.progress.emit(str(message))
 
 
 def _make_latent_fusion_cmap_norm(n_k: int):
@@ -481,10 +496,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.btn_open_processed_dir.clicked.connect(lambda: self._open_program_subdir(os.path.join("data", "processed")))
         self.btn_cancel_task.clicked.connect(self.cancel_running_task)
         self.btn_cancel_task.setEnabled(False)
+        self.btn_primary_screening.clicked.connect(self._run_target_screening)
+        self.btn_toggle_run_info.clicked.connect(self._toggle_run_info)
         self._running_task = None
 
         self.btn_prev_fig.clicked.connect(self.show_prev_figure)
         self.btn_next_fig.clicked.connect(self.show_next_figure)
+        self.btn_fit_fig.clicked.connect(self._toggle_figure_fit)
 
         # 2. 绑定第一排：基础地质与拓扑绘图
         self.btn_yuantu.clicked.connect(self.run_yuantu)
@@ -546,7 +564,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # 多时期分析菜单
         self._setup_multiperiod_menu()
 
-        print("油气区断裂网络连通性智能分析与预测系统 — 初始化完成")
+        print("油气区多期断裂网络勘探有利区辅助筛选系统 — 初始化完成")
 
 
     def append_text(self, text):
@@ -1551,21 +1569,21 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.wizard_browser.setPlainText("\n".join(lines))
 
     def _show_startup_flow_guide(self):
-        QMessageBox.information(
-            self,
-            "使用流程提示",
-            "推荐流程：\n"
-            "1) 先确认网格 CSV（必要时先运行 export_grid_csv.py）\n"
-            "2) 执行属性融合或直接训练 XGBoost\n"
-            "3) 运行 SHAP 可解释分析\n\n"
-            "补充：\n"
-            "- 可先点「选k辅助」确定聚类 k\n"
-            "- 长任务可点「取消任务」中止",
+        if not hasattr(self, "last_run_browser"):
+            return
+        if self.last_run_browser.toPlainText().strip():
+            return
+        self.last_run_browser.setPlainText(
+            "快速开始：点击上方“生成候选勘探有利区”运行正式流程。\n"
+            "结果摘要会保留稳定候选数、证据边界与导出目录；详细进度请切换到“运行日志”。\n"
+            "基础、融合、渗流和实验图件仍可在右侧选项卡中单独生成。"
         )
 
     def _set_busy(self, busy: bool, msg: str = ""):
         if hasattr(self, "btn_cancel_task"):
             self.btn_cancel_task.setEnabled(bool(busy))
+        if hasattr(self, "btn_primary_screening"):
+            self.btn_primary_screening.setEnabled(not bool(busy))
         if msg:
             self.statusBar().showMessage(msg)
         else:
@@ -1575,22 +1593,43 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         cancelled_any = False
         for attr in ("_running_task", "_nw_runner", "_lunkuo_runner"):
             runner = getattr(self, attr, None)
-            if runner is None:
+            if runner is None or not runner.isRunning():
                 continue
             try:
-                runner.terminate()
-                runner.wait(1500)
+                runner.requestInterruption()
             except Exception:
                 pass
-            setattr(self, attr, None)
             cancelled_any = True
         if cancelled_any:
-            self._set_busy(False)
-            QMessageBox.information(self, "已取消", "后台任务已取消。")
+            self.statusBar().showMessage("已请求安全取消，将在当前计算步骤结束后停止…")
+            if hasattr(self, "screening_status_label"):
+                self.screening_status_label.setText("正在安全取消…")
+        return cancelled_any
+
+    def _toggle_run_info(self):
+        visible = not self.run_info_tabs.isVisible()
+        self.run_info_tabs.setVisible(visible)
+        self.btn_toggle_run_info.setText("隐藏运行信息" if visible else "显示运行信息")
 
     def closeEvent(self, event):
         import matplotlib.pyplot as plt
-        self.cancel_running_task()
+        active = any(
+            runner is not None and runner.isRunning()
+            for runner in (
+                getattr(self, "_running_task", None),
+                getattr(self, "_nw_runner", None),
+                getattr(self, "_lunkuo_runner", None),
+            )
+        )
+        if active:
+            self.cancel_running_task()
+            QMessageBox.information(
+                self,
+                "正在安全停止",
+                "后台计算仍在运行，已提交取消请求。请等待当前计算步骤结束后再关闭窗口。",
+            )
+            event.ignore()
+            return
         sys.stdout = sys.__stdout__
         sys.stderr = sys.__stderr__
         plt.close("all")
@@ -1785,6 +1824,60 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.current_fig_idx += 1
             self._render_current_figure()
 
+    def _toggle_figure_fit(self):
+        fit_enabled = self.btn_fit_fig.isChecked()
+        self.btn_fit_fig.setText("自适应：开" if fit_enabled else "自适应：关")
+        self._apply_figure_view_mode()
+
+    def _apply_figure_view_mode(self):
+        """默认将当前图完整缩放进视口；原始尺寸模式才启用滚动。"""
+        canvas = getattr(self, "current_canvas", None)
+        if canvas is None or not getattr(self, "current_figs", None):
+            return
+        index = self.current_fig_idx
+        if index >= len(self.current_fig_sizes):
+            return
+        width_in, height_in = self.current_fig_sizes[index]
+        dpi = float(self.current_fig_dpis[index])
+        original_width = max(1, int(round(width_in * dpi)))
+        original_height = max(1, int(round(height_in * dpi)))
+        fit_enabled = self.btn_fit_fig.isChecked()
+
+        if fit_enabled:
+            self.canvas_scroll.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+            self.canvas_scroll.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+            viewport = self.canvas_scroll.viewport().size()
+            available_width = max(240, viewport.width() - 12)
+            caption_height = 52 if getattr(self, "_current_caption_visible", False) else 4
+            available_height = max(180, viewport.height() - caption_height - 12)
+            scale = min(
+                available_width / float(original_width),
+                available_height / float(original_height),
+            )
+            target_width = max(240, int(original_width * scale))
+            target_height = max(180, int(original_height * scale))
+            canvas.setSizePolicy(
+                QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed
+            )
+            canvas.setMinimumSize(0, 0)
+            canvas.setMaximumSize(target_width, target_height)
+            canvas.resize(target_width, target_height)
+        else:
+            self.canvas_scroll.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
+            self.canvas_scroll.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
+            canvas.setSizePolicy(
+                QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed
+            )
+            canvas.setMinimumSize(original_width, original_height)
+            canvas.setMaximumSize(original_width, original_height)
+            canvas.resize(original_width, original_height)
+        canvas.draw_idle()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if hasattr(self, "btn_fit_fig") and self.btn_fit_fig.isChecked():
+            QtCore.QTimer.singleShot(0, self._apply_figure_view_mode)
+
     def _render_current_figure(self):
         if getattr(self, "_rendering", False):
             return
@@ -1816,9 +1909,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 fig.set_dpi(self.current_fig_dpis[self.current_fig_idx])
 
             canvas = FigureCanvas(fig)
-            canvas.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-            canvas.setMinimumHeight(int(fig.get_size_inches()[1] * fig.dpi))
-            self.canvas_display_layout.addWidget(canvas, 1)
+            canvas.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+            canvas.setMinimumSize(0, 0)
+            self.current_canvas = canvas
+            self.canvas_display_layout.addWidget(canvas, 1, QtCore.Qt.AlignCenter)
             canvas.draw()
             QtWidgets.QApplication.processEvents()
 
@@ -1840,10 +1934,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     "}"
                 )
                 cap_lbl.setText("【图说明】" + cap_text)
+                cap_lbl.setToolTip(cap_text)
                 cap_scroll = QtWidgets.QScrollArea()
                 cap_scroll.setWidgetResizable(True)
                 cap_scroll.setFrameShape(QtWidgets.QFrame.NoFrame)
                 cap_scroll.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+                cap_scroll.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
                 cap_scroll.setSizePolicy(
                     QtWidgets.QSizePolicy.Expanding,
                     QtWidgets.QSizePolicy.Fixed,
@@ -1853,6 +1949,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 cap_scroll.setStyleSheet("QScrollArea { background: transparent; }")
                 self.canvas_display_layout.addSpacing(8)
                 self.canvas_display_layout.addWidget(cap_scroll)
+            self._current_caption_visible = bool(cap_text)
+            QtCore.QTimer.singleShot(0, self._apply_figure_view_mode)
 
             if len(self.current_figs) > 1:
                 self.lbl_fig_status.setText(f"第 {self.current_fig_idx + 1} 张 / 共 {len(self.current_figs)} 张")
@@ -2696,14 +2794,121 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         task.start()
 
     def _setup_multiperiod_menu(self):
-        """添加「多时期分析」菜单到 menubar。"""
-        menu = self.menuBar().addMenu("多时期分析(三期)")
-        menu.addAction("阶段1: 三期融合对比 (PCA+加权+XGBoost)", self._run_multiperiod_stage1)
-        menu.addAction("阶段2: 三期空间叠加 (找靶区)", self._run_multiperiod_stage2)
-        menu.addAction("阶段3: 渗流模拟 (崩塌阈值)", self._run_multiperiod_stage3)
-        menu.addAction("阶段4: 代理模型 (XGBoost→预测渗流)", self._run_multiperiod_stage4)
-        menu.addSeparator()
-        menu.addAction("一键运行阶段1-4", self._run_multiperiod_all)
+        """添加正式筛选入口，同时保留原有专业图件和研究功能。"""
+        menu = self.menuBar().addMenu("多时期勘探筛选")
+        formal_action = menu.addAction("一键生成候选勘探有利区", self._run_target_screening)
+        formal_action.setStatusTip("运行精确拓扑、多期匹配、稳健性分析并导出证据卡")
+
+        professional_menu = menu.addMenu("专业分析与图件")
+        professional_menu.addAction(
+            "三期融合对比图 (PCA+加权+XGBoost诊断)", self._run_multiperiod_stage1
+        )
+        professional_menu.addAction("三期空间叠加图", self._run_multiperiod_stage2)
+        professional_menu.addAction("渗流曲线与关键节点图", self._run_multiperiod_stage3)
+
+        research_menu = menu.addMenu("研究与实验")
+        research_action = research_menu.addAction(
+            "代理模型实验 (XGBoost→预测渗流)", self._run_multiperiod_stage4
+        )
+        research_action.setStatusTip("实验功能，不参与正式候选有利区评分")
+
+    def _run_target_screening(self):
+        """运行可解释的正式候选有利区筛选主流程。"""
+        import matplotlib.pyplot as plt
+        from datetime import datetime
+
+        plt.close("all")
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        out_dir = os.path.join(
+            _PROGRAM_DIR, "data", "processed", "target_screening", timestamp
+        )
+        self.screening_status_label.setText("正在启动…")
+        self.run_info_tabs.setVisible(True)
+        self.btn_toggle_run_info.setText("隐藏运行信息")
+        self.run_info_tabs.setCurrentWidget(self.run_log_tab)
+        self._set_busy(True, "正在进行精确拓扑、多期匹配与候选有利区筛选...")
+
+        def _worker(progress_callback=None):
+            from screening_pipeline import run_target_screening
+            return run_target_screening(
+                output_dir=out_dir, progress_callback=progress_callback
+            )
+
+        self._launch_multiperiod_task(
+            _worker,
+            "候选勘探有利区筛选",
+            self._show_target_screening_result,
+            show_progress=True,
+        )
+
+    def _show_target_screening_result(self, res):
+        """展示正式筛选摘要、证据边界和候选有利区图。"""
+        import matplotlib.pyplot as plt
+
+        summary = res.get("input_summary", {})
+        external = res.get("external_validation", {})
+        artifacts = res.get("artifact_paths", {})
+        period_counts = summary.get("period_grid_counts", {})
+        limitations = res.get("limitations", [])
+        txt = "【多期断裂网络候选勘探有利区辅助筛选】\n\n"
+        txt += f"运行状态: {res.get('status', 'unknown')}\n"
+        txt += f"三期有效网格: {sum(period_counts.values()) if period_counts else 0}\n"
+        txt += f"多期匹配单元: {summary.get('matched_cell_count', 0)}\n"
+        txt += f"候选单元: {summary.get('candidate_cell_count', 0)}\n"
+        txt += f"稳定候选有利区: {summary.get('stable_target_count', 0)}\n"
+        txt += f"不稳定候选（仅供复核）: {summary.get('unstable_target_count', 0)}\n"
+        txt += f"候选空间单元总数: {summary.get('candidate_target_count', 0)}\n"
+        txt += f"外部验证状态: {external.get('status', 'not_validated')}\n"
+        txt += f"运行耗时: {res.get('elapsed_seconds', 0.0):.1f} 秒\n\n"
+        txt += "证据边界:\n"
+        txt += "\n".join(f"- {item}" for item in limitations)
+        txt += f"\n\n结果目录: {os.path.dirname(artifacts.get('result_json', ''))}"
+        self.text_browser.clear()
+        self.text_browser.insertPlainText(txt)
+        self.text_browser.moveCursor(QtGui.QTextCursor.End)
+
+        map_path = artifacts.get("candidate_targets_png")
+        if map_path and os.path.isfile(map_path):
+            fig = plt.figure(figsize=(12, 7))
+            img = plt.imread(map_path)
+            plt.imshow(img)
+            plt.axis("off")
+            plt.tight_layout()
+            self.embed_figure(fig, description="多期断裂网络候选勘探有利区")
+        plt.close("all")
+        stable_count = summary.get("stable_target_count", 0)
+        unstable_count = summary.get("unstable_target_count", 0)
+        self.screening_status_label.setText(f"已完成 · 稳定 {stable_count}")
+        self._update_last_run_card([
+            "正式筛选已完成",
+            f"稳定候选：{stable_count} 个  |  不稳定候选：{unstable_count} 个",
+            f"匹配单元：{summary.get('matched_cell_count', 0)}  |  候选单元：{summary.get('candidate_cell_count', 0)}",
+            f"外部验证：{external.get('status', 'not_validated')}",
+            f"结果目录：{os.path.dirname(artifacts.get('result_json', ''))}",
+        ])
+        self._remember_exports(
+            "候选勘探有利区",
+            result_json=artifacts.get("result_json"),
+            stable_targets_csv=artifacts.get("stable_targets_csv"),
+            candidate_targets_gpkg=artifacts.get("candidate_targets_gpkg"),
+            candidate_targets_png=artifacts.get("candidate_targets_png"),
+        )
+        self._append_run_history({
+            "kind": "target_screening",
+            "stable_target_count": stable_count,
+            "unstable_target_count": unstable_count,
+            "external_validation": external.get("status", "not_validated"),
+            "result_json": artifacts.get("result_json"),
+        })
+        self.run_info_tabs.setCurrentWidget(self.run_summary_tab)
+        self._set_busy(False)
+        QMessageBox.information(
+            self,
+            "筛选完成",
+            f"已生成 {summary.get('stable_target_count', 0)} 个稳定候选有利区，"
+            f"另有 {summary.get('unstable_target_count', 0)} 个不稳定候选供复核。\n"
+            "当前结论属于内部辅助筛选，需结合井位、储层或专家资料验证。",
+        )
 
     def _run_multiperiod_stage1(self):
         """阶段1: 三期独立融合对比。"""
@@ -2857,24 +3062,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         QMessageBox.information(self, "完成", f"阶段4完成\nR² = {res['metrics']['r2']:.4f}")
 
     def _run_multiperiod_all(self):
-        """一键运行全部4个阶段。"""
-        stages = [
-            ("阶段1: 三期融合", self._run_multiperiod_stage1),
-            ("阶段2: 空间叠加", self._run_multiperiod_stage2),
-            ("阶段3: 渗流模拟", self._run_multiperiod_stage3),
-            ("阶段4: 代理模型", self._run_multiperiod_stage4),
-        ]
-        for name, fn in stages:
-            self.append_text(f"\n--- {name} ---\n")
-            try:
-                fn()
-            except Exception as e:
-                self.append_text(f"  [失败] {e}\n")
-        QMessageBox.information(self, "完成", "阶段1-4 全部运行完毕，结果见左侧文本框与右侧图表。")
+        """兼容旧入口；统一转向正式筛选主流程。"""
+        self._run_target_screening()
 
-    def _launch_multiperiod_task(self, worker_fn, title, done_fn):
+    def _launch_multiperiod_task(self, worker_fn, title, done_fn, show_progress=False):
         """启动后台任务并连接完成回调。"""
-        task = TaskRunner(worker_fn)
+        task = TaskRunner(worker_fn, inject_progress=show_progress)
         self._running_task = task
 
         def _done(res):
@@ -2888,10 +3081,23 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         def _fail(msg):
             self._running_task = None
             self._set_busy(False)
+            if "取消" in str(msg):
+                if show_progress and hasattr(self, "screening_status_label"):
+                    self.screening_status_label.setText("已取消")
+                QMessageBox.information(self, "已取消", "任务已在安全检查点停止。")
+                return
+            if show_progress and hasattr(self, "screening_status_label"):
+                self.screening_status_label.setText("运行失败")
             QMessageBox.critical(self, "运行失败", self._friendly_error_message(title, msg))
 
         task.finished_ok.connect(_done)
         task.failed.connect(_fail)
+        if show_progress:
+            def _show_progress(message):
+                self._set_busy(True, f"{title}: {message}")
+                if hasattr(self, "screening_status_label"):
+                    self.screening_status_label.setText(str(message))
+            task.progress.connect(_show_progress)
         task.start()
 
     def _set_ronghe_combo_tooltip(self):

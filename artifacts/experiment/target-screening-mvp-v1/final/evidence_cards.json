@@ -1,0 +1,1359 @@
+[
+  {
+    "target_id": "T001",
+    "target_level": "不稳定候选",
+    "centroid_x": 15439612.33,
+    "centroid_y": 5112857.6325,
+    "area": 54000000.0,
+    "total_score": 0.4789502917909561,
+    "network_criticality": 0.7612865479741605,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.5833333333333334,
+    "supporting_periods": [
+      "印支燕山期",
+      "海西期"
+    ],
+    "cell_count": 6,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由6个高值网格组成；支持时期为印支燕山期|海西期；参数稳定率0.58。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T002",
+    "target_level": "一级",
+    "centroid_x": 15441612.33,
+    "centroid_y": 5091357.6325,
+    "area": 27000000.0,
+    "total_score": 0.5332391142534804,
+    "network_criticality": 0.809254612152801,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.8333333333333334,
+    "supporting_periods": [
+      "印支燕山期",
+      "海西期"
+    ],
+    "cell_count": 3,
+    "evidence_status": "internal_supported",
+    "recommendation_reason": "由3个高值网格组成；支持时期为印支燕山期|海西期；参数稳定率0.83。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T003",
+    "target_level": "一级",
+    "centroid_x": 15422212.330000002,
+    "centroid_y": 5090957.6325,
+    "area": 45000000.0,
+    "total_score": 0.525313392090076,
+    "network_criticality": 0.8008954059716459,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.8,
+    "supporting_periods": [
+      "印支燕山期",
+      "海西期"
+    ],
+    "cell_count": 5,
+    "evidence_status": "internal_supported",
+    "recommendation_reason": "由5个高值网格组成；支持时期为印支燕山期|海西期；参数稳定率0.80。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T004",
+    "target_level": "不稳定候选",
+    "centroid_x": 15396038.104999999,
+    "centroid_y": 5075384.432499999,
+    "area": 90000000.0,
+    "total_score": 0.44327017025057786,
+    "network_criticality": 0.6950576292873653,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.5,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 10,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由10个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.50。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T005",
+    "target_level": "不稳定候选",
+    "centroid_x": 15444938.104999999,
+    "centroid_y": 5061584.432499999,
+    "area": 90000000.0,
+    "total_score": 0.4632120997826603,
+    "network_criticality": 0.759177427950458,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.4833333333333333,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 10,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由10个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.48。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T006",
+    "target_level": "不稳定候选",
+    "centroid_x": 15417938.105,
+    "centroid_y": 5060384.4325,
+    "area": 36000000.0,
+    "total_score": 0.4574681742039177,
+    "network_criticality": 0.7356233548683362,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.5,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 4,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由4个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.50。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T007",
+    "target_level": "不稳定候选",
+    "centroid_x": 15429938.105,
+    "centroid_y": 5060384.4325,
+    "area": 36000000.0,
+    "total_score": 0.4558944792691649,
+    "network_criticality": 0.7311270836261852,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.5,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 4,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由4个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.50。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T008",
+    "target_level": "不稳定候选",
+    "centroid_x": 15405723.81928571,
+    "centroid_y": 5059741.575357142,
+    "area": 126000000.0,
+    "total_score": 0.4681537856693692,
+    "network_criticality": 0.7661536733410551,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.5,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 14,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由14个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.50。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T009",
+    "target_level": "不稳定候选",
+    "centroid_x": 15381638.105,
+    "centroid_y": 5054984.432500001,
+    "area": 180000000.0,
+    "total_score": 0.4633166527652139,
+    "network_criticality": 0.7559047221863254,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.4916666666666667,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 20,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由20个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.49。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T010",
+    "target_level": "不稳定候选",
+    "centroid_x": 15396938.105,
+    "centroid_y": 5054384.4325,
+    "area": 36000000.0,
+    "total_score": 0.46124808626526026,
+    "network_criticality": 0.7464231036150293,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.5,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 4,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由4个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.50。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T011",
+    "target_level": "不稳定候选",
+    "centroid_x": 15485771.438333333,
+    "centroid_y": 5052717.765833333,
+    "area": 81000000.0,
+    "total_score": 0.4458121203915906,
+    "network_criticality": 0.702320343975973,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.5,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 9,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由9个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.50。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T012",
+    "target_level": "不稳定候选",
+    "centroid_x": 15450509.533571424,
+    "centroid_y": 5050098.718214286,
+    "area": 126000000.0,
+    "total_score": 0.47369586572363104,
+    "network_criticality": 0.781988187781803,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.5,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 14,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由14个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.50。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T013",
+    "target_level": "不稳定候选",
+    "centroid_x": 15370438.104999999,
+    "centroid_y": 5048384.4325,
+    "area": 81000000.0,
+    "total_score": 0.4427419402137525,
+    "network_criticality": 0.6935484006107215,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.5,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 9,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由9个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.50。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T014",
+    "target_level": "不稳定候选",
+    "centroid_x": 15351938.105,
+    "centroid_y": 5046884.4325,
+    "area": 36000000.0,
+    "total_score": 0.44180546879842003,
+    "network_criticality": 0.6908727679954858,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.5,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 4,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由4个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.50。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T015",
+    "target_level": "二级",
+    "centroid_x": 15408938.104999997,
+    "centroid_y": 5046384.432499999,
+    "area": 108000000.0,
+    "total_score": 0.5037460287574079,
+    "network_criticality": 0.730941034544975,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.8194444444444445,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 12,
+    "evidence_status": "internal_supported",
+    "recommendation_reason": "由12个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.82。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T016",
+    "target_level": "不稳定候选",
+    "centroid_x": 15465338.104999999,
+    "centroid_y": 5044484.432499999,
+    "area": 90000000.0,
+    "total_score": 0.4589598166192085,
+    "network_criticality": 0.7398851903405956,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.5,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 10,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由10个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.50。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T017",
+    "target_level": "不稳定候选",
+    "centroid_x": 15383438.105,
+    "centroid_y": 5040884.4325,
+    "area": 36000000.0,
+    "total_score": 0.4625632816411688,
+    "network_criticality": 0.7501808046890537,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.5,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 4,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由4个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.50。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T018",
+    "target_level": "不稳定候选",
+    "centroid_x": 15454152.390714288,
+    "centroid_y": 5040670.146785715,
+    "area": 63000000.0,
+    "total_score": 0.4657184883575986,
+    "network_criticality": 0.7591956810217103,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.5,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 7,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由7个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.50。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T019",
+    "target_level": "不稳定候选",
+    "centroid_x": 15434938.104999997,
+    "centroid_y": 5039384.432499999,
+    "area": 108000000.0,
+    "total_score": 0.44343708775852747,
+    "network_criticality": 0.6955345364529358,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.5,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 12,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由12个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.50。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T020",
+    "target_level": "不稳定候选",
+    "centroid_x": 15405638.104999995,
+    "centroid_y": 5036384.4325,
+    "area": 135000000.0,
+    "total_score": 0.48277129020105136,
+    "network_criticality": 0.7364894005744325,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.6666666666666666,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 15,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由15个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.67。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T021",
+    "target_level": "不稳定候选",
+    "centroid_x": 15486638.105,
+    "centroid_y": 5035784.4325,
+    "area": 45000000.0,
+    "total_score": 0.46584825846221556,
+    "network_criticality": 0.7167093098920444,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.6,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 5,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由5个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.60。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T022",
+    "target_level": "不稳定候选",
+    "centroid_x": 15444638.105,
+    "centroid_y": 5034884.432500001,
+    "area": 180000000.0,
+    "total_score": 0.4798315274501898,
+    "network_criticality": 0.7173757927148279,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.6916666666666667,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 20,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由20个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.69。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T023",
+    "target_level": "不稳定候选",
+    "centroid_x": 15372938.105,
+    "centroid_y": 5034884.4325,
+    "area": 72000000.0,
+    "total_score": 0.44248276311263013,
+    "network_criticality": 0.6928078946075147,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.5,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 8,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由8个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.50。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T024",
+    "target_level": "不稳定候选",
+    "centroid_x": 15464438.105,
+    "centroid_y": 5034884.4325,
+    "area": 36000000.0,
+    "total_score": 0.4518010785681904,
+    "network_criticality": 0.7194316530519727,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.5,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 4,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由4个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.50。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T025",
+    "target_level": "不稳定候选",
+    "centroid_x": 15425438.104999997,
+    "centroid_y": 5034884.432499999,
+    "area": 108000000.0,
+    "total_score": 0.4593694302789482,
+    "network_criticality": 0.7231983722255665,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.5416666666666666,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 12,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由12个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.54。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T026",
+    "target_level": "不稳定候选",
+    "centroid_x": 15415332.841842106,
+    "centroid_y": 5032594.958815791,
+    "area": 171000000.0,
+    "total_score": 0.5027259204371614,
+    "network_criticality": 0.7521492463618146,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.763157894736842,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 19,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由19个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.76。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T027",
+    "target_level": "不稳定候选",
+    "centroid_x": 15457271.438333333,
+    "centroid_y": 5027551.099166667,
+    "area": 162000000.0,
+    "total_score": 0.49306662294184417,
+    "network_criticality": 0.7301903512624118,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.75,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 18,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由18个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.75。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T028",
+    "target_level": "不稳定候选",
+    "centroid_x": 15434738.104999999,
+    "centroid_y": 5027384.432499999,
+    "area": 90000000.0,
+    "total_score": 0.4455201239414179,
+    "network_criticality": 0.701486068404051,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.5,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 10,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由10个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.50。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T029",
+    "target_level": "不稳定候选",
+    "centroid_x": 15378771.438333333,
+    "centroid_y": 5026717.765833333,
+    "area": 81000000.0,
+    "total_score": 0.46684108893765086,
+    "network_criticality": 0.7385935874409071,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.5555555555555556,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 9,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由9个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.56。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T030",
+    "target_level": "不稳定候选",
+    "centroid_x": 15395738.104999999,
+    "centroid_y": 5025284.432499999,
+    "area": 90000000.0,
+    "total_score": 0.4903312544698785,
+    "network_criticality": 0.7295178699139385,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.7333333333333333,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 10,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由10个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.73。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T031",
+    "target_level": "不稳定候选",
+    "centroid_x": 15426438.104999995,
+    "centroid_y": 5023184.4325,
+    "area": 135000000.0,
+    "total_score": 0.4617116781255723,
+    "network_criticality": 0.7334619375016354,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.5333333333333333,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 15,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由15个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.53。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T032",
+    "target_level": "一级",
+    "centroid_x": 15404438.105,
+    "centroid_y": 5021384.4325,
+    "area": 144000000.0,
+    "total_score": 0.5230023968254548,
+    "network_criticality": 0.766613990929871,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.8645833333333333,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 16,
+    "evidence_status": "internal_supported",
+    "recommendation_reason": "由16个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.86。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T033",
+    "target_level": "不稳定候选",
+    "centroid_x": 15452438.104999997,
+    "centroid_y": 5021111.705227272,
+    "area": 99000000.0,
+    "total_score": 0.4954914973470201,
+    "network_criticality": 0.727378304108369,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.7727272727272727,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 11,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由11个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.77。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T034",
+    "target_level": "不稳定候选",
+    "centroid_x": 15481892.650454544,
+    "centroid_y": 5020838.977954545,
+    "area": 99000000.0,
+    "total_score": 0.4571475060222483,
+    "network_criticality": 0.7347071600635665,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.5,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 11,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由11个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.50。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T035",
+    "target_level": "不稳定候选",
+    "centroid_x": 15471938.105000002,
+    "centroid_y": 5020384.4325,
+    "area": 54000000.0,
+    "total_score": 0.44533756998312213,
+    "network_criticality": 0.700964485666063,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.5,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 6,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由6个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.50。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T036",
+    "target_level": "二级",
+    "centroid_x": 15415538.104999999,
+    "centroid_y": 5020184.432499999,
+    "area": 90000000.0,
+    "total_score": 0.514262097832801,
+    "network_criticality": 0.7693202795222884,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.8,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 10,
+    "evidence_status": "internal_supported",
+    "recommendation_reason": "由10个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.80。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T037",
+    "target_level": "不稳定候选",
+    "centroid_x": 15374813.105,
+    "centroid_y": 5017259.4325,
+    "area": 72000000.0,
+    "total_score": 0.4480758958602744,
+    "network_criticality": 0.7087882738864986,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.5,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 8,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由8个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.50。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T038",
+    "target_level": "一级",
+    "centroid_x": 15385538.104999999,
+    "centroid_y": 5016584.432499999,
+    "area": 90000000.0,
+    "total_score": 0.5487129577207815,
+    "network_criticality": 0.8034655934879472,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.95,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 10,
+    "evidence_status": "internal_supported",
+    "recommendation_reason": "由10个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.95。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T039",
+    "target_level": "二级",
+    "centroid_x": 15446438.105,
+    "centroid_y": 5013884.4325,
+    "area": 36000000.0,
+    "total_score": 0.5220964335157148,
+    "network_criticality": 0.759561238616328,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.875,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 4,
+    "evidence_status": "internal_supported",
+    "recommendation_reason": "由4个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.88。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T040",
+    "target_level": "不稳定候选",
+    "centroid_x": 15426438.104999995,
+    "centroid_y": 5013584.4325,
+    "area": 135000000.0,
+    "total_score": 0.4534910019793394,
+    "network_criticality": 0.7242600056552553,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.5,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 15,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由15个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.50。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T041",
+    "target_level": "不稳定候选",
+    "centroid_x": 15481771.438333333,
+    "centroid_y": 5012384.4325,
+    "area": 81000000.0,
+    "total_score": 0.44615313212796426,
+    "network_criticality": 0.7032946632227551,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.5,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 9,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由9个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.50。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T042",
+    "target_level": "不稳定候选",
+    "centroid_x": 15395652.390714282,
+    "centroid_y": 5009813.003928571,
+    "area": 126000000.0,
+    "total_score": 0.5005330819755696,
+    "network_criticality": 0.7464210505424439,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.7619047619047619,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 14,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由14个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.76。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T043",
+    "target_level": "不稳定候选",
+    "centroid_x": 15408090.278913047,
+    "centroid_y": 5009514.86728261,
+    "area": 207000000.0,
+    "total_score": 0.5128273678385169,
+    "network_criticality": 0.7664632869920361,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.7971014492753623,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 23,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由23个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.80。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T044",
+    "target_level": "不稳定候选",
+    "centroid_x": 15460174.947105264,
+    "centroid_y": 5009068.643026317,
+    "area": 171000000.0,
+    "total_score": 0.4943718634340491,
+    "network_criticality": 0.7395587075559296,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.7368421052631579,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 19,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由19个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.74。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T045",
+    "target_level": "不稳定候选",
+    "centroid_x": 15367604.771666666,
+    "centroid_y": 5006051.099166667,
+    "area": 162000000.0,
+    "total_score": 0.4506776393358284,
+    "network_criticality": 0.7162218266737954,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.5,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 18,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由18个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.50。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T046",
+    "target_level": "不稳定候选",
+    "centroid_x": 15418838.105,
+    "centroid_y": 5003384.432500001,
+    "area": 180000000.0,
+    "total_score": 0.5040431804190943,
+    "network_criticality": 0.7651233726259841,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.7416666666666666,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 20,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由20个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.74。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T047",
+    "target_level": "不稳定候选",
+    "centroid_x": 15387104.771666666,
+    "centroid_y": 5002884.432500001,
+    "area": 162000000.0,
+    "total_score": 0.49625648521677745,
+    "network_criticality": 0.7273994815717453,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.7777777777777778,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 18,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由18个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.78。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T048",
+    "target_level": "一级",
+    "centroid_x": 15446438.105,
+    "centroid_y": 5001884.4325,
+    "area": 36000000.0,
+    "total_score": 0.5472932900986838,
+    "network_criticality": 0.777980828853382,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 1.0,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 4,
+    "evidence_status": "internal_supported",
+    "recommendation_reason": "由4个高值网格组成；支持时期为喜山期|海西期；参数稳定率1.00。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T049",
+    "target_level": "不稳定候选",
+    "centroid_x": 15431271.438333333,
+    "centroid_y": 4999217.765833334,
+    "area": 162000000.0,
+    "total_score": 0.45223001411558905,
+    "network_criticality": 0.7206571831873974,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.5,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 18,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由18个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.50。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T050",
+    "target_level": "不稳定候选",
+    "centroid_x": 15395138.104999999,
+    "centroid_y": 4997984.432499999,
+    "area": 90000000.0,
+    "total_score": 0.45188506936972883,
+    "network_criticality": 0.719671626770654,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.5,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 10,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由10个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.50。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T051",
+    "target_level": "不稳定候选",
+    "centroid_x": 15408938.105,
+    "centroid_y": 4994384.4325,
+    "area": 144000000.0,
+    "total_score": 0.48043348681512055,
+    "network_criticality": 0.7521313909003445,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.6145833333333333,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 16,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由16个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.61。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T052",
+    "target_level": "不稳定候选",
+    "centroid_x": 15461738.105,
+    "centroid_y": 4992584.432500001,
+    "area": 180000000.0,
+    "total_score": 0.4559657262164163,
+    "network_criticality": 0.7313306463326179,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.5,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 20,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由20个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.50。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T053",
+    "target_level": "一级",
+    "centroid_x": 15423638.105,
+    "centroid_y": 4989884.432500001,
+    "area": 180000000.0,
+    "total_score": 0.5292568118859249,
+    "network_criticality": 0.7585908911026424,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.925,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 20,
+    "evidence_status": "internal_supported",
+    "recommendation_reason": "由20个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.93。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T054",
+    "target_level": "不稳定候选",
+    "centroid_x": 15449813.105,
+    "centroid_y": 4988759.4325,
+    "area": 72000000.0,
+    "total_score": 0.4784651114013848,
+    "network_criticality": 0.7420431754325281,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.625,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 8,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由8个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.62。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T055",
+    "target_level": "不稳定候选",
+    "centroid_x": 15401063.105,
+    "centroid_y": 4988384.4325,
+    "area": 144000000.0,
+    "total_score": 0.44626335381643184,
+    "network_criticality": 0.7036095823326625,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.5,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 16,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由16个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.50。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T056",
+    "target_level": "不稳定候选",
+    "centroid_x": 15435859.15763158,
+    "centroid_y": 4983647.590394738,
+    "area": 171000000.0,
+    "total_score": 0.49907028112317325,
+    "network_criticality": 0.7417045626075626,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.7631578947368421,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 19,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由19个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.76。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T057",
+    "target_level": "不稳定候选",
+    "centroid_x": 15413652.390714282,
+    "centroid_y": 4983455.861071428,
+    "area": 126000000.0,
+    "total_score": 0.47594006985371173,
+    "network_criticality": 0.7220736689697888,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.6547619047619048,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 14,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由14个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.65。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T058",
+    "target_level": "不稳定候选",
+    "centroid_x": 15444438.104999997,
+    "centroid_y": 4980134.432499999,
+    "area": 108000000.0,
+    "total_score": 0.46656485970703826,
+    "network_criticality": 0.7616138848772523,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.5,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 12,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由12个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.50。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  },
+  {
+    "target_id": "T059",
+    "target_level": "不稳定候选",
+    "centroid_x": 15425009.533571424,
+    "centroid_y": 4976170.146785714,
+    "area": 126000000.0,
+    "total_score": 0.4634073017706811,
+    "network_criticality": 0.706673923426436,
+    "removal_impact": 0.0,
+    "period_persistence": 0.5,
+    "parameter_stability": 0.6071428571428571,
+    "supporting_periods": [
+      "喜山期",
+      "海西期"
+    ],
+    "cell_count": 14,
+    "evidence_status": "internal_partial",
+    "recommendation_reason": "由14个高值网格组成；支持时期为喜山期|海西期；参数稳定率0.61。",
+    "limitations": [
+      "尚未接入井位、储层或专家盲评外部证据"
+    ],
+    "external_validation_status": "not_validated"
+  }
+]
