@@ -1,0 +1,36 @@
+{
+  "run_id": "validation-v2",
+  "timestamp_utc": "2026-08-23T06:45:19.031438+00:00",
+  "python": "3.12.13 (main, Aug  7 2026, 02:26:41) [MSC v.1944 64 bit (AMD64)]",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "git_commit": "2d4d139554373f2f0c415a6205305547df795d05",
+  "git_status": [
+    "?? artifacts/experiment/validation-v2/"
+  ],
+  "versions": {
+    "numpy": "1.26.4",
+    "pandas": "2.3.3",
+    "scipy": "1.17.1",
+    "sklearn": "1.8.0",
+    "networkx": "3.6.1",
+    "xgboost": "3.2.0",
+    "matplotlib": "3.11.1"
+  },
+  "expected_core_versions": {
+    "numpy": "1.26.4",
+    "pandas": "2.3.3",
+    "sklearn": "1.8.0",
+    "networkx": "3.6.1",
+    "xgboost": "3.2.0"
+  },
+  "random_state": 42,
+  "command": "C:\\Users\\（-1，0）\\Documents\\Reproduction and Calibration Analysis of Contrastive Multimodal Sentiment Detection\\worktrees\\fault-fusion-correctness\\.venv\\Scripts\\python.exe scripts/run_validation_v2.py",
+  "fixed_conditions": {
+    "periods": 3,
+    "edge_weight": "NC_A",
+    "weight_mode": "min",
+    "grid_step_m": 3000.0,
+    "model": "AGENT_XGB_PARAMS",
+    "split": "leave_one_period_out"
+  }
+}

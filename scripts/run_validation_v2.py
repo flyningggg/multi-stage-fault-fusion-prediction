@@ -125,8 +125,14 @@ def _plot_ranking(rows: list[dict], out_path: Path) -> None:
     ax.set_title("LOPO ranking fails the pre-specified acceptance gate")
     ax.grid(axis="y", alpha=0.25)
     ax.spines[["top", "right"]].set_visible(False)
-    ax.legend(ncol=2, fontsize=8.5, frameon=False, loc="upper right")
-    fig.tight_layout()
+    ax.legend(
+        ncol=3,
+        fontsize=8.5,
+        frameon=False,
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.13),
+    )
+    fig.tight_layout(rect=(0.0, 0.08, 1.0, 1.0))
     fig.savefig(out_path, dpi=180, bbox_inches="tight")
     plt.close(fig)
 

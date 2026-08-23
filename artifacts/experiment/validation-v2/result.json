@@ -1,0 +1,216 @@
+{
+  "run_id": "validation-v2",
+  "parent_run": "correctness-v1",
+  "parent_commit": "d69b7a3",
+  "research_question": "代理模型能否跨期稳定筛出精确betweenness高值节点，且标签对合理距离转换是否稳健？",
+  "lopo": {
+    "per_period": {
+      "印支燕山期": {
+        "r2": 0.0917867979615915,
+        "rmse": 1.5198556120122773,
+        "mae": 0.8245084785337743,
+        "n_test": 3480,
+        "ranking": {
+          "status": "ok",
+          "n_samples": 3480,
+          "spearman": 0.5137316973863609,
+          "kendall": 0.39473750725222634,
+          "top_5pct_k": 174,
+          "top_5pct_overlap": 0.45977011494252873,
+          "ndcg_5pct": 0.9042919714527441,
+          "top_10pct_k": 348,
+          "top_10pct_overlap": 0.5804597701149425,
+          "ndcg_10pct": 0.9167873240608502,
+          "top_20pct_k": 696,
+          "top_20pct_overlap": 0.47988505747126436,
+          "ndcg_20pct": 0.905890617395596
+        }
+      },
+      "喜山期": {
+        "r2": 0.47085972866482273,
+        "rmse": 0.6971757122438347,
+        "mae": 0.44686886412570254,
+        "n_test": 2793,
+        "ranking": {
+          "status": "ok",
+          "n_samples": 2793,
+          "spearman": 0.6905857207486098,
+          "kendall": 0.5239741253361965,
+          "top_5pct_k": 140,
+          "top_5pct_overlap": 0.16428571428571428,
+          "ndcg_5pct": 0.9729969450532827,
+          "top_10pct_k": 280,
+          "top_10pct_overlap": 0.3142857142857143,
+          "ndcg_10pct": 0.9768819638848452,
+          "top_20pct_k": 559,
+          "top_20pct_overlap": 0.45796064400715564,
+          "ndcg_20pct": 0.9787678398818301
+        }
+      },
+      "海西期": {
+        "r2": 0.3572503192421457,
+        "rmse": 0.8555447430536957,
+        "mae": 0.5713829105572769,
+        "n_test": 3599,
+        "ranking": {
+          "status": "ok",
+          "n_samples": 3599,
+          "spearman": 0.670268672285959,
+          "kendall": 0.5118817470438572,
+          "top_5pct_k": 180,
+          "top_5pct_overlap": 0.5055555555555555,
+          "ndcg_5pct": 0.9369016030009115,
+          "top_10pct_k": 360,
+          "top_10pct_overlap": 0.4527777777777778,
+          "ndcg_10pct": 0.9312642010208596,
+          "top_20pct_k": 720,
+          "top_20pct_overlap": 0.49444444444444446,
+          "ndcg_20pct": 0.9438058518994543
+        }
+      }
+    },
+    "r2_mean": 0.30663228195618664,
+    "r2_std": 0.15884103368251803,
+    "ranking_aggregate": {
+      "spearman_mean": 0.6248620301403099,
+      "kendall_mean": 0.4768644598774267,
+      "top_5pct_overlap_mean": 0.3765371282612662,
+      "top_10pct_overlap_mean": 0.44917442072614483,
+      "top_20pct_overlap_mean": 0.47743004864095484,
+      "ndcg_5pct_mean": 0.9380635065023127,
+      "ndcg_10pct_mean": 0.9416444963221849,
+      "ndcg_20pct_mean": 0.9428214363922934
+    }
+  },
+  "proxy_decision": {
+    "status": "stop_proxy",
+    "reason": "至少一个时期未达到最低排序门槛"
+  },
+  "distance_sensitivity": {
+    "baseline": "inverse",
+    "variants": [
+      "inverse_sqrt",
+      "neglog"
+    ],
+    "status": "robust",
+    "criterion": "all period/variant Top20 overlap >= 0.70",
+    "rows": [
+      {
+        "period": "印支燕山期",
+        "transform": "inverse_sqrt",
+        "status": "ok",
+        "n_samples": 3480,
+        "spearman": 0.9938923768369414,
+        "kendall": 0.9702151848735734,
+        "top_5pct_k": 174,
+        "top_5pct_overlap": 0.9655172413793104,
+        "ndcg_5pct": 0.9981767695670782,
+        "top_10pct_k": 348,
+        "top_10pct_overlap": 0.985632183908046,
+        "ndcg_10pct": 0.9987925724617532,
+        "top_20pct_k": 696,
+        "top_20pct_overlap": 0.992816091954023,
+        "ndcg_20pct": 0.999622526995953
+      },
+      {
+        "period": "喜山期",
+        "transform": "inverse_sqrt",
+        "status": "ok",
+        "n_samples": 2793,
+        "spearman": 1.0,
+        "kendall": 0.9999999999999999,
+        "top_5pct_k": 140,
+        "top_5pct_overlap": 1.0,
+        "ndcg_5pct": 1.0,
+        "top_10pct_k": 280,
+        "top_10pct_overlap": 1.0,
+        "ndcg_10pct": 1.0,
+        "top_20pct_k": 559,
+        "top_20pct_overlap": 1.0,
+        "ndcg_20pct": 1.0
+      },
+      {
+        "period": "海西期",
+        "transform": "inverse_sqrt",
+        "status": "ok",
+        "n_samples": 3599,
+        "spearman": 0.999926183353486,
+        "kendall": 0.9985778274213347,
+        "top_5pct_k": 180,
+        "top_5pct_overlap": 1.0,
+        "ndcg_5pct": 0.9999998848004513,
+        "top_10pct_k": 360,
+        "top_10pct_overlap": 1.0,
+        "ndcg_10pct": 0.9999999145038082,
+        "top_20pct_k": 720,
+        "top_20pct_overlap": 0.9972222222222222,
+        "ndcg_20pct": 0.9999548448345941
+      },
+      {
+        "period": "印支燕山期",
+        "transform": "neglog",
+        "status": "ok",
+        "n_samples": 3480,
+        "spearman": 0.8943662422311647,
+        "kendall": 0.798320639595968,
+        "top_5pct_k": 174,
+        "top_5pct_overlap": 0.6954022988505747,
+        "ndcg_5pct": 0.9680248113203747,
+        "top_10pct_k": 348,
+        "top_10pct_overlap": 0.8247126436781609,
+        "ndcg_10pct": 0.9725312118575589,
+        "top_20pct_k": 696,
+        "top_20pct_overlap": 0.8649425287356322,
+        "ndcg_20pct": 0.9813558979305036
+      },
+      {
+        "period": "喜山期",
+        "transform": "neglog",
+        "status": "ok",
+        "n_samples": 2793,
+        "spearman": 1.0,
+        "kendall": 0.9999999999999999,
+        "top_5pct_k": 140,
+        "top_5pct_overlap": 1.0,
+        "ndcg_5pct": 1.0,
+        "top_10pct_k": 280,
+        "top_10pct_overlap": 1.0,
+        "ndcg_10pct": 1.0,
+        "top_20pct_k": 559,
+        "top_20pct_overlap": 1.0,
+        "ndcg_20pct": 1.0
+      },
+      {
+        "period": "海西期",
+        "transform": "neglog",
+        "status": "ok",
+        "n_samples": 3599,
+        "spearman": 0.978518012409825,
+        "kendall": 0.9193970408369566,
+        "top_5pct_k": 180,
+        "top_5pct_overlap": 0.8611111111111112,
+        "ndcg_5pct": 0.9858821577556084,
+        "top_10pct_k": 360,
+        "top_10pct_overlap": 0.925,
+        "ndcg_10pct": 0.9927197432309404,
+        "top_20pct_k": 720,
+        "top_20pct_overlap": 0.9347222222222222,
+        "ndcg_20pct": 0.9957512356812024
+      }
+    ]
+  },
+  "evaluation_summary": {
+    "outcome": "stop_proxy",
+    "claim_update": "refuted_or_fragile",
+    "baseline_relation": "same_data_same_lopo_contract",
+    "comparability": "high_for_proxy_ranking; transform_slice_changes_label_definition_by_design",
+    "failure_mode": "direction_underperforming",
+    "next_action": "停止跨期代理主线，保留精确中心性并优先获取外部地质标签"
+  },
+  "limitations": [
+    "betweenness是内部拓扑代理标签，不是油气发现标签",
+    "尚无井位、产量、储层或专家盲评外部证据",
+    "本轮未改变网格尺度、邻接容差或聚类参数"
+  ],
+  "elapsed_seconds": 606.5711444999906
+}
