@@ -1,0 +1,3 @@
+# Optional isolated P3 environment. PorePy is GPL-3.0 and is not a GUI runtime dependency.
+porepy @ git+https://github.com/pmgbergen/porepy.git@03f45d6d6294c57b29c3bf518cab822cf3792c96
+pyyaml>=6.0

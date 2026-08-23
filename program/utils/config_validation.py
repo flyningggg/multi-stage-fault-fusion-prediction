@@ -20,6 +20,8 @@ def validate_config(cfg: Dict[str, Any]) -> List[str]:
     clustering = cfg.get("clustering") or {}
     export_grid = cfg.get("export_grid") or {}
     screening = cfg.get("screening") or {}
+    uncertainty = cfg.get("uncertainty") or {}
+    physics = cfg.get("physics_pilot") or {}
 
     if not _is_num(export_grid.get("cell_width", 0)) or float(export_grid.get("cell_width", 0)) <= 0:
         errors.append("export_grid.cell_width 必须为正数。")
@@ -105,6 +107,45 @@ def validate_config(cfg: Dict[str, Any]) -> List[str]:
             errors.append("screening.target_clustering.min_samples 必须为整数且 >= 1。")
         if not _is_num(max_diameter_m) or float(max_diameter_m) <= 0:
             errors.append("screening.target_clustering.max_diameter_m 必须为正数。")
+
+    if uncertainty:
+        radius = uncertainty.get("target_match_radius_m", 9000.0)
+        robust = uncertainty.get("robust_occurrence_threshold", 0.80)
+        conditional = uncertainty.get("conditional_occurrence_threshold", 0.50)
+        if not _is_num(radius) or float(radius) <= 0:
+            errors.append("uncertainty.target_match_radius_m 必须为正数。")
+        if not (_is_num(robust) and _is_num(conditional)) or not (
+            0 < float(conditional) <= float(robust) <= 1
+        ):
+            errors.append("uncertainty 出现频率门槛必须满足 0 < conditional <= robust <= 1。")
+
+    if physics:
+        for key in ("traces_path", "area_path"):
+            if not isinstance(physics.get(key), str) or not physics.get(key):
+                errors.append(f"physics_pilot.{key} 必须为非空字符串。")
+        if not isinstance(physics.get("top_trace_count"), int) or int(
+            physics.get("top_trace_count", 0)
+        ) < 1:
+            errors.append("physics_pilot.top_trace_count 必须为正整数。")
+        positive_keys = (
+            "minimum_segment_length_m", "cell_size_m", "pressure_drop_pa",
+            "matrix_permeability_m2", "residual_aperture_m",
+            "equation_residual_linf_tolerance",
+        )
+        for key in positive_keys:
+            value = physics.get(key)
+            if not _is_num(value) or float(value) <= 0:
+                errors.append(f"physics_pilot.{key} 必须为正数。")
+        ratios = physics.get("fracture_permeability_ratios")
+        if not isinstance(ratios, list) or not ratios or not all(
+            _is_num(value) and float(value) > 0 for value in ratios
+        ):
+            errors.append("physics_pilot.fracture_permeability_ratios 必须为非空正数列表。")
+        directions = physics.get("flow_directions")
+        if not isinstance(directions, list) or not directions or not all(
+            value in {"x", "y"} for value in directions
+        ):
+            errors.append("physics_pilot.flow_directions 仅支持非空的 x/y 列表。")
 
     return errors
 
