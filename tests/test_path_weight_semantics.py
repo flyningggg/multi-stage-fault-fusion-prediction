@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 
 from percolation import (
+    apply_distance_transform,
     build_grid_graph,
     capacity_to_distance,
     identify_key_nodes,
@@ -20,6 +21,30 @@ def test_capacity_to_distance_is_positive_and_monotone():
     assert np.isfinite(distances).all()
     assert (distances > 0).all()
     assert np.all(np.diff(distances) < 0), "连通能力越大，路径阻抗应越小"
+
+
+@pytest.mark.parametrize("method", ["inverse", "inverse_sqrt", "neglog"])
+def test_supported_distance_transforms_are_positive_and_monotone(method):
+    capacities = np.array([0.0, 0.1, 1.0, 10.0])
+    distances = capacity_to_distance(capacities, method=method, scale=10.0)
+    assert np.isfinite(distances).all()
+    assert (distances > 0).all()
+    assert np.all(np.diff(distances) < 0)
+
+
+def test_apply_distance_transform_changes_distance_not_capacity():
+    graph = nx.Graph()
+    graph.add_edge(0, 1, capacity=0.25, weight=0.25)
+    graph.add_edge(1, 2, capacity=1.0, weight=1.0)
+    before = [graph[u][v]["capacity"] for u, v in graph.edges]
+
+    apply_distance_transform(graph, "inverse_sqrt")
+
+    after = [graph[u][v]["capacity"] for u, v in graph.edges]
+    assert after == before
+    assert graph.graph["distance_transform"] == "inverse_sqrt"
+    assert graph[0][1]["distance"] == pytest.approx(2.0)
+    assert graph[1][2]["distance"] == pytest.approx(1.0)
 
 
 def test_grid_edges_store_capacity_and_distance_without_breaking_weight_alias():

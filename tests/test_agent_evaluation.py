@@ -103,4 +103,6 @@ def test_lopo_evaluate_covers_all_periods():
         for key in ["r2", "rmse", "mae", "n_test"]:
             assert key in m and np.isfinite(m[key])
         assert m["n_test"] == 40
+        assert set(["spearman", "kendall", "top_20pct_overlap"]) <= set(m["ranking"])
     assert np.isfinite(out["r2_mean"]) and np.isfinite(out["r2_std"])
+    assert np.isfinite(out["ranking_aggregate"]["spearman_mean"])

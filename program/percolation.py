@@ -55,18 +55,64 @@ EDGE_DIST_TOLERANCE = 150.0  # 邻接判定的坐标容差 (m)
 PATH_RESISTANCE_EPS = 1e-12  # 容量转最短路径阻抗时防止除零
 
 
-def capacity_to_distance(capacity, eps: float = PATH_RESISTANCE_EPS):
+DISTANCE_TRANSFORMS = ("inverse", "inverse_sqrt", "neglog")
+
+
+def capacity_to_distance(
+    capacity,
+    eps: float = PATH_RESISTANCE_EPS,
+    method: str = "inverse",
+    scale: float | None = None,
+):
     """将非负连通能力转换为最短路径阻抗。
 
     NetworkX 的加权最短路径将 ``weight`` 解释为距离/成本；而 NC_A 等
     指标表示连通能力，数值越大应越容易通过。因此路径计算使用其倒数，
     零或负容量按零容量处理并得到很大的有限阻抗。
+
+    ``method`` 仅用于显式敏感性分析：
+      - inverse: 1 / (w + eps)，当前基准；
+      - inverse_sqrt: 1 / sqrt(w + eps)；
+      - neglog: -log((w + eps) / (scale + eps)) + eps，scale 为图内最大容量。
     """
     values = np.asarray(capacity, dtype=float)
-    distances = 1.0 / (np.maximum(values, 0.0) + float(eps))
+    values = np.maximum(values, 0.0)
+    if method == "inverse":
+        distances = 1.0 / (values + float(eps))
+    elif method == "inverse_sqrt":
+        distances = 1.0 / np.sqrt(values + float(eps))
+    elif method == "neglog":
+        max_capacity = float(np.max(values)) if scale is None else float(scale)
+        max_capacity = max(max_capacity, float(eps))
+        normalized = (values + float(eps)) / (max_capacity + float(eps))
+        distances = -np.log(np.minimum(normalized, 1.0)) + float(eps)
+    else:
+        raise ValueError(
+            f"未知距离转换 {method!r}，可选值: {', '.join(DISTANCE_TRANSFORMS)}"
+        )
     if distances.ndim == 0:
         return float(distances)
     return distances
+
+
+def apply_distance_transform(G: "nx.Graph", method: str = "inverse") -> str:
+    """依据图中 ``capacity`` 批量重算 ``distance``，返回属性名。"""
+    if method not in DISTANCE_TRANSFORMS:
+        raise ValueError(
+            f"未知距离转换 {method!r}，可选值: {', '.join(DISTANCE_TRANSFORMS)}"
+        )
+    _capacity_attr(G)
+    edge_rows = list(G.edges(data=True))
+    if not edge_rows:
+        G.graph["distance_transform"] = method
+        return "distance"
+    scale = max(float(data["capacity"]) for _, _, data in edge_rows)
+    for _, _, data in edge_rows:
+        data["distance"] = capacity_to_distance(
+            data["capacity"], method=method, scale=scale
+        )
+    G.graph["distance_transform"] = method
+    return "distance"
 
 
 def _path_distance_attr(G: "nx.Graph") -> str:
@@ -74,7 +120,8 @@ def _path_distance_attr(G: "nx.Graph") -> str:
     for _, _, data in G.edges(data=True):
         if "distance" not in data:
             capacity = data.get("capacity", data.get("weight", 0.0))
-            data["distance"] = capacity_to_distance(capacity)
+            method = str(G.graph.get("distance_transform", "inverse"))
+            data["distance"] = capacity_to_distance(capacity, method=method)
     return "distance"
 
 
@@ -92,6 +139,7 @@ def build_grid_graph(
     weight_mode: str = "min",
     grid_step: float = GRID_STEP,
     edge_dist_tolerance: float = EDGE_DIST_TOLERANCE,
+    distance_transform: str = "inverse",
 ) -> "nx.Graph":
     """
     将网格 GeoDataFrame 构建为邻接图。
@@ -102,6 +150,7 @@ def build_grid_graph(
       weight_mode:     边权重聚合方式
                         "min"  — 取两邻接网格的最小值（更保守）
                         "mean" — 取平均值
+      distance_transform: 容量到路径距离的显式转换；默认 inverse 保持基准语义
 
     返回：
       networkx.Graph
@@ -165,9 +214,10 @@ def build_grid_graph(
                     j,
                     weight=w,  # 向后兼容：历史调用将 weight 作为连通能力
                     capacity=w,
-                    distance=capacity_to_distance(w),
                     frac_deleted=None,
                 )
+
+    apply_distance_transform(G, distance_transform)
 
     # 过滤孤立节点（degree=0 的节点对渗流无意义，但保留用于完整计数）
     n_edges = G.number_of_edges()

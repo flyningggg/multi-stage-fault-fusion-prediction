@@ -177,6 +177,64 @@ def _lopo_split(unique_periods) -> List[Tuple[List, object]]:
     ]
 
 
+def ranking_metrics(
+    y_true,
+    y_pred,
+    top_fractions: Tuple[float, ...] = (0.05, 0.10, 0.20),
+) -> Dict:
+    """计算全局秩相关与高值 Top-K 排序一致性。
+
+    Top-K 并列值通过原始行号稳定打破，保证同一输入可复现。NDCG 使用
+    非负真实相关性和标准对数折损；该函数不拟合模型，可独立单测。
+    """
+    from scipy.stats import kendalltau, spearmanr
+
+    true = np.asarray(y_true, dtype=float).reshape(-1)
+    pred = np.asarray(y_pred, dtype=float).reshape(-1)
+    if len(true) != len(pred) or len(true) < 2:
+        raise ValueError("y_true/y_pred 必须等长且至少包含2个样本")
+    if not np.isfinite(true).all() or not np.isfinite(pred).all():
+        raise ValueError("排序指标不接受 NaN 或无穷值")
+
+    spearman = float(spearmanr(true, pred).statistic)
+    kendall = float(kendalltau(true, pred).statistic)
+    degenerate = not np.isfinite(spearman) or not np.isfinite(kendall)
+    if not np.isfinite(spearman):
+        spearman = 0.0
+    if not np.isfinite(kendall):
+        kendall = 0.0
+
+    indices = np.arange(len(true), dtype=int)
+    true_order = np.lexsort((indices, -true))
+    pred_order = np.lexsort((indices, -pred))
+    relevance = true - float(np.min(true))
+
+    out: Dict = {
+        "status": "degenerate" if degenerate else "ok",
+        "n_samples": int(len(true)),
+        "spearman": spearman,
+        "kendall": kendall,
+    }
+    for fraction in top_fractions:
+        if not 0.0 < float(fraction) <= 1.0:
+            raise ValueError(f"非法 Top-K 比例: {fraction}")
+        k = max(1, int(np.ceil(len(true) * float(fraction))))
+        true_top = set(true_order[:k].tolist())
+        pred_top = set(pred_order[:k].tolist())
+        overlap = len(true_top & pred_top) / float(k)
+
+        discounts = 1.0 / np.log2(np.arange(2, k + 2, dtype=float))
+        dcg = float(np.sum(relevance[pred_order[:k]] * discounts))
+        ideal = float(np.sum(relevance[true_order[:k]] * discounts))
+        ndcg = 1.0 if ideal <= 0.0 else dcg / ideal
+
+        label = f"{int(round(float(fraction) * 100))}pct"
+        out[f"top_{label}_k"] = int(k)
+        out[f"top_{label}_overlap"] = float(overlap)
+        out[f"ndcg_{label}"] = float(ndcg)
+    return out
+
+
 def leave_one_period_out_evaluate(
     df,
     target_col: str = "log1p_betweenness",
@@ -206,6 +264,7 @@ def leave_one_period_out_evaluate(
     feats = _feature_cols(df)
     per_period: Dict[str, Dict] = {}
     r2_list: List[float] = []
+    rank_rows: List[Dict] = []
     for train_ps, test_p in _lopo_split(periods):
         tr = df[df["period"].isin(train_ps)]
         te = df[df["period"] == test_p]
@@ -218,16 +277,28 @@ def leave_one_period_out_evaluate(
             "rmse": float(np.sqrt(mean_squared_error(y_true, pred))),
             "mae": float(mean_absolute_error(y_true, pred)),
             "n_test": int(len(te)),
+            "ranking": ranking_metrics(y_true, pred),
         }
         per_period[str(test_p)] = metrics
         r2_list.append(metrics["r2"])
+        rank_rows.append(metrics["ranking"])
         logger.info("LOPO %s: R²=%.4f RMSE=%.4f (n=%d)",
                     test_p, metrics["r2"], metrics["rmse"], metrics["n_test"])
 
+    rank_keys = [
+        "spearman", "kendall",
+        "top_5pct_overlap", "top_10pct_overlap", "top_20pct_overlap",
+        "ndcg_5pct", "ndcg_10pct", "ndcg_20pct",
+    ]
+    rank_aggregate = {
+        f"{key}_mean": float(np.mean([row[key] for row in rank_rows]))
+        for key in rank_keys
+    }
     return {
         "per_period": per_period,
         "r2_mean": float(np.mean(r2_list)),
         "r2_std": float(np.std(r2_list)),
+        "ranking_aggregate": rank_aggregate,
     }
 
 
@@ -336,6 +407,7 @@ def build_agent_training_data(
     edge_weight_col: str = "NC_A",
     use_spatial_features: bool = True,
     use_neighbor_features: bool = True,
+    distance_transform: str = "inverse",
 ) -> pd.DataFrame:
     """
     构建代理模型训练数据 v2：
@@ -350,7 +422,12 @@ def build_agent_training_data(
 
     for period_name, gdf in period_gdfs.items():
         logger.info("构建图并计算 betweenness: %s (%d 网格)", period_name, len(gdf))
-        G = build_grid_graph(gdf, edge_weight_col=edge_weight_col, weight_mode="min")
+        G = build_grid_graph(
+            gdf,
+            edge_weight_col=edge_weight_col,
+            weight_mode="min",
+            distance_transform=distance_transform,
+        )
 
         # 计算 betweenness（精确计算，避免近似误差）
         n_nodes = G.number_of_nodes()
