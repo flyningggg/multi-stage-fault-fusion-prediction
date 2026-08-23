@@ -18,6 +18,19 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[1]
 PROGRAM = ROOT / "program"
 RUN_DIR = ROOT / "artifacts" / "experiment" / "validation-v2"
+EXPECTED_CORE_VERSIONS = {
+    "numpy": "1.26.4",
+    "pandas": "2.3.3",
+    "sklearn": "1.8.0",
+    "networkx": "3.6.1",
+    "xgboost": "3.2.0",
+}
+PERIOD_LABELS = {
+    "海西期": "Haixi",
+    "印支燕山期": "Indosinian-Yanshanian",
+    "喜山期": "Himalayan",
+}
+PERIOD_ORDER = {name: index for index, name in enumerate(PERIOD_LABELS)}
 if str(PROGRAM) not in sys.path:
     sys.path.insert(0, str(PROGRAM))
 
@@ -89,21 +102,30 @@ def _plot_ranking(rows: list[dict], out_path: Path) -> None:
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    periods = [row["period"] for row in rows]
+    rows = sorted(rows, key=lambda row: PERIOD_ORDER.get(row["period"], 99))
+    periods = [PERIOD_LABELS.get(row["period"], row["period"]) for row in rows]
     x = np.arange(len(periods), dtype=float)
     width = 0.25
-    fig, ax = plt.subplots(figsize=(9, 5.5))
-    ax.bar(x - width, [row["spearman"] for row in rows], width, label="Spearman")
-    ax.bar(x, [row["top_10pct_overlap"] for row in rows], width, label="Top 10% overlap")
-    ax.bar(x + width, [row["top_20pct_overlap"] for row in rows], width, label="Top 20% overlap")
-    ax.axhline(0.70, color="#2a9d8f", linestyle="--", linewidth=1.2, label="go threshold")
-    ax.axhline(0.50, color="#e76f51", linestyle=":", linewidth=1.2, label="minimum threshold")
+    fig, ax = plt.subplots(figsize=(8.8, 5.0))
+    bars = [
+        ax.bar(x - width, [row["spearman"] for row in rows], width,
+               color="#4E79A7", label="Spearman"),
+        ax.bar(x, [row["top_10pct_overlap"] for row in rows], width,
+               color="#D6A25E", label="Top 10% overlap"),
+        ax.bar(x + width, [row["top_20pct_overlap"] for row in rows], width,
+               color="#76A89A", label="Top 20% overlap"),
+    ]
+    ax.axhline(0.70, color="#3D8B7D", linestyle="--", linewidth=1.2, label="go threshold")
+    ax.axhline(0.50, color="#B85C4A", linestyle=":", linewidth=1.2, label="minimum threshold")
+    for group in bars:
+        ax.bar_label(group, fmt="%.2f", padding=2, fontsize=8)
     ax.set_xticks(x, periods)
-    ax.set_ylim(-0.05, 1.05)
+    ax.set_ylim(0.0, 0.82)
     ax.set_ylabel("score")
-    ax.set_title("LOPO high-value ranking consistency")
+    ax.set_title("LOPO ranking fails the pre-specified acceptance gate")
     ax.grid(axis="y", alpha=0.25)
-    ax.legend(ncol=2, fontsize=9)
+    ax.spines[["top", "right"]].set_visible(False)
+    ax.legend(ncol=2, fontsize=8.5, frameon=False, loc="upper right")
     fig.tight_layout()
     fig.savefig(out_path, dpi=180, bbox_inches="tight")
     plt.close(fig)
@@ -116,27 +138,37 @@ def _plot_sensitivity(rows: list[dict], out_path: Path) -> None:
     import matplotlib.pyplot as plt
 
     variants = ["inverse_sqrt", "neglog"]
-    periods = sorted({row["period"] for row in rows})
+    periods_raw = sorted(
+        {row["period"] for row in rows}, key=lambda name: PERIOD_ORDER.get(name, 99)
+    )
+    periods = [PERIOD_LABELS.get(period, period) for period in periods_raw]
     x = np.arange(len(periods), dtype=float)
     width = 0.35
-    fig, ax = plt.subplots(figsize=(9, 5.5))
-    for offset, variant in zip((-width / 2, width / 2), variants):
+    fig, ax = plt.subplots(figsize=(8.8, 5.0))
+    bar_groups = []
+    for offset, variant, color in zip(
+        (-width / 2, width / 2), variants, ("#4E79A7", "#D6A25E")
+    ):
         vals = [
             next(
                 row["top_20pct_overlap"]
                 for row in rows
-                if row["period"] == period and row["transform"] == variant
+                if row["period"] == period_raw and row["transform"] == variant
             )
-            for period in periods
+            for period_raw in periods_raw
         ]
-        ax.bar(x + offset, vals, width, label=variant)
-    ax.axhline(0.70, color="#e76f51", linestyle="--", linewidth=1.2, label="robust threshold")
+        group = ax.bar(x + offset, vals, width, color=color, label=variant)
+        bar_groups.append(group)
+    for group in bar_groups:
+        ax.bar_label(group, fmt="%.2f", padding=2, fontsize=8)
+    ax.axhline(0.70, color="#B85C4A", linestyle="--", linewidth=1.2, label="robust threshold")
     ax.set_xticks(x, periods)
     ax.set_ylim(0.0, 1.05)
     ax.set_ylabel("Top 20% overlap vs inverse")
-    ax.set_title("Exact-label sensitivity to distance transform")
+    ax.set_title("Exact high-value ranking is stable across distance transforms")
     ax.grid(axis="y", alpha=0.25)
-    ax.legend()
+    ax.spines[["top", "right"]].set_visible(False)
+    ax.legend(frameon=False, loc="lower right")
     fig.tight_layout()
     fig.savefig(out_path, dpi=180, bbox_inches="tight")
     plt.close(fig)
@@ -153,6 +185,18 @@ def main() -> int:
     (RUN_DIR / "run.log").write_text("", encoding="utf-8")
     start = time.perf_counter()
 
+    observed_versions = {
+        name: _version(name)
+        for name in ("numpy", "pandas", "scipy", "sklearn", "networkx", "xgboost", "matplotlib")
+    }
+    drift = {
+        name: {"expected": expected, "observed": observed_versions.get(name)}
+        for name, expected in EXPECTED_CORE_VERSIONS.items()
+        if observed_versions.get(name) != expected
+    }
+    if drift:
+        raise RuntimeError(f"核心依赖版本漂移，拒绝运行: {drift}")
+
     environment = {
         "run_id": "validation-v2",
         "timestamp_utc": datetime.now(timezone.utc).isoformat(),
@@ -164,10 +208,8 @@ def main() -> int:
         "git_status": subprocess.check_output(
             ["git", "status", "--short"], cwd=ROOT, text=True
         ).splitlines(),
-        "versions": {
-            name: _version(name)
-            for name in ("numpy", "pandas", "scipy", "sklearn", "networkx", "xgboost", "matplotlib")
-        },
+        "versions": observed_versions,
+        "expected_core_versions": EXPECTED_CORE_VERSIONS,
         "random_state": 42,
         "command": f"{sys.executable} scripts/run_validation_v2.py",
         "fixed_conditions": {
@@ -185,6 +227,12 @@ def main() -> int:
 
     _log("构建 inverse 精确标签和代理特征")
     baseline_df = build_agent_training_data(distance_transform="inverse")
+    labels_dir = RUN_DIR / "labels"
+    labels_dir.mkdir(parents=True, exist_ok=True)
+    label_cols = ["period", "cell_x", "cell_y", "betweenness", "log1p_betweenness"]
+    baseline_df[label_cols].to_csv(
+        labels_dir / "inverse.csv", index=False, encoding="utf-8-sig"
+    )
     _log(f"基准训练数据完成: n={len(baseline_df)}")
 
     _log("运行三折 LOPO 并计算高值排序指标")
@@ -209,6 +257,9 @@ def main() -> int:
             use_spatial_features=False,
             use_neighbor_features=False,
             distance_transform=transform,
+        )
+        variant_df[label_cols].to_csv(
+            labels_dir / f"{transform}.csv", index=False, encoding="utf-8-sig"
         )
         variant_labels = variant_df[keys + ["log1p_betweenness"]].rename(
             columns={"log1p_betweenness": "variant"}
@@ -282,5 +333,18 @@ def main() -> int:
     return 0
 
 
+def render_existing() -> int:
+    """仅用已落盘CSV重新渲染图，不重复昂贵中心性计算。"""
+    import pandas as pd
+
+    ranking_rows = pd.read_csv(RUN_DIR / "ranking_metrics.csv").to_dict("records")
+    sensitivity_rows = pd.read_csv(RUN_DIR / "distance_sensitivity.csv").to_dict("records")
+    _plot_ranking(ranking_rows, RUN_DIR / "ranking_stability.png")
+    _plot_sensitivity(sensitivity_rows, RUN_DIR / "distance_sensitivity.png")
+    return 0
+
+
 if __name__ == "__main__":
+    if "--render-only" in sys.argv:
+        raise SystemExit(render_existing())
     raise SystemExit(main())
