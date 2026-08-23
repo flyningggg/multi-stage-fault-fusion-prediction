@@ -1,0 +1,64 @@
+{
+  "run_id": "p3-20260823-235835",
+  "status": "completed",
+  "package_check": {
+    "available": true,
+    "version": "1.13.0",
+    "error": null
+  },
+  "claim_scope": "porepy_method_pilot_only",
+  "mapping_to_screening_targets": "not_validated_missing_colocated_raw_traces",
+  "planned_scenario_count": 6,
+  "successful_scenario_count": 6,
+  "failed_scenarios": [],
+  "equation_residual_linf_threshold": 1e-10,
+  "solver_residual_pass": true,
+  "matrix_boundary_flux_warning_threshold": 0.005,
+  "matrix_boundary_flux_warning_scenarios": [
+    "x_ratio_10000",
+    "x_ratio_1e+06",
+    "y_ratio_10000",
+    "y_ratio_1e+06"
+  ],
+  "monotonic_response_by_direction": {
+    "x": true,
+    "y": true
+  },
+  "x_to_y_effective_permeability_ratio": {
+    "100.0": 0.9639865885329943,
+    "10000.0": 1.0502801225699183,
+    "1000000.0": 1.0754069825930435
+  },
+  "geometry_summary": {
+    "source_traces_path": "C:\\Users\\（-1，0）\\Documents\\Reproduction and Calibration Analysis of Contrastive Multimodal Sentiment Detection\\integration\\multi-stage-fault-fusion-prediction-main\\program\\KB11\\KB11_traces_100.geojson",
+    "source_area_path": "C:\\Users\\（-1，0）\\Documents\\Reproduction and Calibration Analysis of Contrastive Multimodal Sentiment Detection\\integration\\multi-stage-fault-fusion-prediction-main\\program\\KB11\\KB11_area.geojson",
+    "source_crs": "urn:ogc:def:crs:EPSG::3067",
+    "source_trace_count": 100,
+    "clipped_trace_count": 100,
+    "selected_trace_count": 12,
+    "fracture_segment_count": 18,
+    "simplify_tolerance_m": 0.5,
+    "minimum_segment_length_m": 0.2,
+    "origin_xy": [
+      465992.9354999997,
+      6691561.908399999
+    ],
+    "domain_extent_m": [
+      56.68420000001788,
+      45.40240000002086
+    ],
+    "data_role": "method_demonstration_geometry_not_tarim_validation"
+  },
+  "limitations": [
+    "KB11 为方法演示几何，不是塔里木工区验证数据。",
+    "渗透率、孔隙度、压差和孔隙流体参数为情景假设，不是实测标定值。",
+    "P3 结果不进入候选区综合分，也不证明油气预测有效。"
+  ],
+  "artifact_paths": {
+    "result_json": "C:\\Users\\（-1，0）\\Documents\\Reproduction and Calibration Analysis of Contrastive Multimodal Sentiment Detection\\integration\\multi-stage-fault-fusion-prediction-main\\artifacts\\experiment\\p2-p3-v1\\p3\\result.json",
+    "prepared_geometry_json": "C:\\Users\\（-1，0）\\Documents\\Reproduction and Calibration Analysis of Contrastive Multimodal Sentiment Detection\\integration\\multi-stage-fault-fusion-prediction-main\\artifacts\\experiment\\p2-p3-v1\\p3\\prepared_geometry.json",
+    "scenario_metrics_csv": "C:\\Users\\（-1，0）\\Documents\\Reproduction and Calibration Analysis of Contrastive Multimodal Sentiment Detection\\integration\\multi-stage-fault-fusion-prediction-main\\artifacts\\experiment\\p2-p3-v1\\p3\\scenario_metrics.csv",
+    "scenario_response_png": "C:\\Users\\（-1，0）\\Documents\\Reproduction and Calibration Analysis of Contrastive Multimodal Sentiment Detection\\integration\\multi-stage-fault-fusion-prediction-main\\artifacts\\experiment\\p2-p3-v1\\p3\\maps\\p3_scenario_response.png"
+  },
+  "runtime_seconds": 20.199816400010604
+}

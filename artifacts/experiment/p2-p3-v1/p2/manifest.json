@@ -1,0 +1,188 @@
+{
+  "created_at": "2026-08-23T16:28:02.813780+00:00",
+  "python": "3.12.13",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "config_path": "C:\\Users\\（-1，0）\\Documents\\Reproduction and Calibration Analysis of Contrastive Multimodal Sentiment Detection\\integration\\multi-stage-fault-fusion-prediction-main\\program\\config.yaml",
+  "scenario_contract": [
+    {
+      "scenario_id": "grid_step_low",
+      "label": "网格步长 -10%",
+      "factor": "grid_step_m",
+      "direction": "low",
+      "overrides": {
+        "grid.step_m": 2700.0
+      }
+    },
+    {
+      "scenario_id": "grid_step_high",
+      "label": "网格步长 +10%",
+      "factor": "grid_step_m",
+      "direction": "high",
+      "overrides": {
+        "grid.step_m": 3300.0000000000005
+      }
+    },
+    {
+      "scenario_id": "adjacency_tight",
+      "label": "邻接容差收紧",
+      "factor": "edge_tolerance_m",
+      "direction": "low",
+      "overrides": {
+        "grid.edge_dist_tolerance_m": 75.0
+      }
+    },
+    {
+      "scenario_id": "adjacency_loose",
+      "label": "邻接容差放宽",
+      "factor": "edge_tolerance_m",
+      "direction": "high",
+      "overrides": {
+        "grid.edge_dist_tolerance_m": 300.0
+      }
+    },
+    {
+      "scenario_id": "matching_tight",
+      "label": "跨期匹配容差收紧",
+      "factor": "match_tolerance_m",
+      "direction": "low",
+      "overrides": {
+        "grid.centroid_match_tolerance_m": 1200.0
+      }
+    },
+    {
+      "scenario_id": "matching_loose",
+      "label": "跨期匹配容差放宽",
+      "factor": "match_tolerance_m",
+      "direction": "high",
+      "overrides": {
+        "grid.centroid_match_tolerance_m": 1800.0
+      }
+    },
+    {
+      "scenario_id": "quantile_low",
+      "label": "候选分位数降低",
+      "factor": "candidate_quantile",
+      "direction": "low",
+      "overrides": {
+        "screening.candidate_cell_quantile": 0.75
+      }
+    },
+    {
+      "scenario_id": "quantile_high",
+      "label": "候选分位数提高",
+      "factor": "candidate_quantile",
+      "direction": "high",
+      "overrides": {
+        "screening.candidate_cell_quantile": 0.8500000000000001
+      }
+    },
+    {
+      "scenario_id": "cluster_eps_low",
+      "label": "聚类半径 -1/6",
+      "factor": "cluster_eps_m",
+      "direction": "low",
+      "overrides": {
+        "screening.target_clustering.eps_m": 3750.0
+      }
+    },
+    {
+      "scenario_id": "cluster_eps_high",
+      "label": "聚类半径 +1/6",
+      "factor": "cluster_eps_m",
+      "direction": "high",
+      "overrides": {
+        "screening.target_clustering.eps_m": 5250.0
+      }
+    },
+    {
+      "scenario_id": "diameter_low",
+      "label": "最大直径 -1/6",
+      "factor": "max_diameter_m",
+      "direction": "low",
+      "overrides": {
+        "screening.target_clustering.max_diameter_m": 15000.0
+      }
+    },
+    {
+      "scenario_id": "diameter_high",
+      "label": "最大直径 +1/6",
+      "factor": "max_diameter_m",
+      "direction": "high",
+      "overrides": {
+        "screening.target_clustering.max_diameter_m": 21000.0
+      }
+    },
+    {
+      "scenario_id": "weight_topology",
+      "label": "增强网络关键性权重",
+      "factor": "score_weights",
+      "direction": "topology",
+      "overrides": {
+        "screening.score_weights": {
+          "network_criticality": 0.44999999999999996,
+          "removal_impact": 0.21153846153846154,
+          "period_persistence": 0.21153846153846154,
+          "parameter_stability": 0.12692307692307692
+        }
+      }
+    },
+    {
+      "scenario_id": "weight_persistence",
+      "label": "增强多期持续性权重",
+      "factor": "score_weights",
+      "direction": "persistence",
+      "overrides": {
+        "screening.score_weights": {
+          "network_criticality": 0.3033333333333333,
+          "removal_impact": 0.21666666666666667,
+          "period_persistence": 0.35,
+          "parameter_stability": 0.13
+        }
+      }
+    },
+    {
+      "scenario_id": "distance_inverse_sqrt",
+      "label": "以 inverse_sqrt 为基准距离变换",
+      "factor": "distance_transform",
+      "direction": "inverse_sqrt",
+      "overrides": {
+        "screening.distance_transforms": [
+          "inverse_sqrt",
+          "inverse",
+          "neglog"
+        ]
+      }
+    },
+    {
+      "scenario_id": "distance_neglog",
+      "label": "以 neglog 为基准距离变换",
+      "factor": "distance_transform",
+      "direction": "neglog",
+      "overrides": {
+        "screening.distance_transforms": [
+          "neglog",
+          "inverse",
+          "inverse_sqrt"
+        ]
+      }
+    }
+  ],
+  "successful_scenario_ids": [
+    "baseline",
+    "adjacency_tight",
+    "adjacency_loose",
+    "matching_tight",
+    "matching_loose",
+    "quantile_low",
+    "quantile_high",
+    "cluster_eps_low",
+    "cluster_eps_high",
+    "diameter_low",
+    "diameter_high",
+    "weight_topology",
+    "weight_persistence",
+    "distance_inverse_sqrt",
+    "distance_neglog"
+  ],
+  "status": "completed"
+}

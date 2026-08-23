@@ -7,6 +7,7 @@ __pycache__/
 env/
 venv/
 .venv/
+.venv-porepy/
 *.egg-info/
 dist/
 build/
@@ -24,6 +25,7 @@ Thumbs.db
 # Logs
 *.log
 logs/
+!artifacts/experiment/p2-p3-v1/test.log
 
 # Cache
 .cache/
@@ -40,6 +42,13 @@ program/data/multiperiod_results/
 tmp_zip/
 *.tmp
 *.bak
+gmsh_frac_file.*
+
+# P2/P3 regeneratable heavy intermediates
+artifacts/experiment/p2-p3-v1/p2/scenario_runs/
+artifacts/experiment/p2-p3-v1/p3-smoke/
+artifacts/experiment/p2-p3-v1/p3/scenarios/*/visualization/
+artifacts/experiment/p2-p3-v1/p3/scenarios/*/pressure.png
 
 # Large data files (optional - uncomment if needed)
 # program/*.csv

@@ -116,6 +116,29 @@ screening:
   external_validation:
     buffer_m: 0.0
 
+# P2 内部参数不确定性；工程门槛，不是通用地质标准
+uncertainty:
+  target_match_radius_m: 9000.0
+  robust_occurrence_threshold: 0.80
+  conditional_occurrence_threshold: 0.50
+
+# P3 PorePy 方法试验；数值为无量纲化情景假设，不是实测储层参数
+physics_pilot:
+  traces_path: "program/KB11/KB11_traces_100.geojson"
+  area_path: "program/KB11/KB11_area.geojson"
+  top_trace_count: 12
+  simplify_tolerance_m: 0.5
+  minimum_segment_length_m: 0.20
+  domain_padding_m: 1.0
+  cell_size_m: 4.0
+  pressure_drop_pa: 1.0
+  matrix_permeability_m2: 1.0e-14
+  fracture_permeability_ratios: [100.0, 10000.0, 1000000.0]
+  residual_aperture_m: 1.0e-3
+  flow_directions: ["x", "y"]
+  equation_residual_linf_tolerance: 1.0e-10
+  matrix_boundary_flux_warning_threshold: 5.0e-3
+
 product:
   competition_mode: true
   experimental_features_visible: true  # 保留现有专业绘图与研究功能

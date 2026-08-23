@@ -1,0 +1,129 @@
+high_value_attrs:
+- Connections per Branch
+- Connections per Trace
+- Connection Frequency
+environment:
+  python_recommended: '3.10'
+  python_supported: '>=3.9,<3.13'
+  fractopo_tested: 0.9.x
+  notes: 推荐使用 environment.yml 或 requirements.txt 安装；GUI/ML 功能在 Python 3.10/3.11 更稳。
+logging:
+  level: INFO
+  file: logs/pipeline.log
+export_grid:
+  cell_width: 750.0
+  out_csv: true
+  out_gpkg: true
+  gpkg_layer: grid_topology
+grid:
+  step_m: 3300.0000000000005
+  edge_dist_tolerance_m: 150.0
+  centroid_match_tolerance_m: 1500.0
+  target_eps_m: 4500.0
+  target_min_cluster_size: 3
+clustering:
+  n_clusters: 4
+  random_state: 42
+  k_search_min: 2
+  k_search_max: 12
+  pca_components: 2
+  umap_components: 2
+  umap_neighbors: 15
+  ae_latent: 2
+  ae_epochs: 100
+  vae_latent: 2
+  vae_epochs: 150
+feature_engineering:
+  normalize_method: standard
+  outlier_method: iqr
+  variance_threshold: 1.0e-06
+  n_select_mi: 10
+fusion:
+  high_value_weight: 1.5
+  export_cluster_csv: true
+  export_cluster_gpkg: true
+  export_fusion_csv: true
+train:
+  n_splits: 5
+  test_size: 0.1
+  random_state: 42
+  stability_seeds:
+  - 42
+  - 43
+  - 44
+  - 45
+  - 46
+  target_column: Fracture Intensity B21
+  baseline_models:
+  - linear_regression
+  - random_forest
+  - xgboost
+  random_forest:
+    n_estimators: 200
+    max_depth: 8
+  export_predictions_csv: true
+  export_predictions_gpkg: true
+  prediction_interval_sigma: 1.96
+  conformal_alpha: 0.1
+  spatial_cv_blocks: 9
+tune:
+  n_trials: 30
+  timeout_minutes: 30
+explain:
+  export_shap_csv: true
+  top_n_features: 10
+screening:
+  edge_weight_column: NC_A
+  distance_transforms:
+  - inverse
+  - inverse_sqrt
+  - neglog
+  top_betweenness_fraction: 0.2
+  candidate_cell_quantile: 0.8
+  min_supporting_periods: 2
+  score_weights:
+    network_criticality: 0.35
+    removal_impact: 0.25
+    period_persistence: 0.25
+    parameter_stability: 0.15
+  network_criticality_weights:
+    betweenness: 0.7
+    pagerank: 0.3
+  target_clustering:
+    eps_m: 4500.0
+    min_samples: 3
+    max_diameter_m: 18000.0
+  external_validation:
+    buffer_m: 0.0
+uncertainty:
+  target_match_radius_m: 9000.0
+  robust_occurrence_threshold: 0.8
+  conditional_occurrence_threshold: 0.5
+physics_pilot:
+  traces_path: program/KB11/KB11_traces_100.geojson
+  area_path: program/KB11/KB11_area.geojson
+  top_trace_count: 12
+  simplify_tolerance_m: 0.5
+  minimum_segment_length_m: 0.2
+  domain_padding_m: 1.0
+  cell_size_m: 4.0
+  pressure_drop_pa: 1.0
+  matrix_permeability_m2: 1.0e-14
+  fracture_permeability_ratios:
+  - 100.0
+  - 10000.0
+  - 1000000.0
+  residual_aperture_m: 0.001
+  flow_directions:
+  - x
+  - y
+  equation_residual_linf_tolerance: 1.0e-10
+  matrix_boundary_flux_warning_threshold: 0.005
+product:
+  competition_mode: true
+  experimental_features_visible: true
+demo_placeholders:
+  time_baseline: 10.0
+  time_fusion: 4.0
+  cost_baseline: 1.0
+  cost_optimized: 0.8

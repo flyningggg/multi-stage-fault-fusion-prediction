@@ -1,0 +1,17 @@
+{
+  "summary": "artifacts/experiment/p2-p3-v1/summary.md",
+  "run_record": "artifacts/experiment/p2-p3-v1/RUN.md",
+  "metrics_json": "artifacts/experiment/p2-p3-v1/metrics.json",
+  "metrics_markdown": "artifacts/experiment/p2-p3-v1/metrics.md",
+  "claim_validation": "artifacts/experiment/p2-p3-v1/claim_validation.md",
+  "runlog_summary": "artifacts/experiment/p2-p3-v1/runlog.summary.md",
+  "environment": "artifacts/experiment/p2-p3-v1/environment.txt",
+  "test_log": "artifacts/experiment/p2-p3-v1/test.log",
+  "p2_result": "artifacts/experiment/p2-p3-v1/p2/result.json",
+  "p2_target_uncertainty": "artifacts/experiment/p2-p3-v1/p2/target_uncertainty.csv",
+  "p2_scenario_summary": "artifacts/experiment/p2-p3-v1/p2/scenario_summary.csv",
+  "p2_figure": "artifacts/experiment/p2-p3-v1/p2/maps/p2_uncertainty.png",
+  "p3_result": "artifacts/experiment/p2-p3-v1/p3/result.json",
+  "p3_metrics": "artifacts/experiment/p2-p3-v1/p3/scenario_metrics.csv",
+  "p3_figure": "artifacts/experiment/p2-p3-v1/p3/maps/p3_scenario_response.png"
+}

@@ -1,0 +1,24 @@
+{
+  "run_id": "p2-p3-v1",
+  "branch": "codex/p2-p3-uncertainty-flow",
+  "baseline_commit": "5007830d3e3ce7d1feb3807e0f97565f2e47fa94",
+  "status": "completed",
+  "experiment_tier": "main/test",
+  "config": "program/config.yaml",
+  "commands": [
+    ".venv\\Scripts\\python.exe scripts\\run_uncertainty_p2.py --output artifacts\\experiment\\p2-p3-v1\\p2",
+    ".venv-porepy\\Scripts\\python.exe scripts\\run_porepy_p3.py --output artifacts\\experiment\\p2-p3-v1\\p3",
+    ".venv\\Scripts\\python.exe -m pytest -q"
+  ],
+  "seeds": [],
+  "environment_snapshot": "artifacts/experiment/p2-p3-v1/environment.txt",
+  "results": [
+    "artifacts/experiment/p2-p3-v1/p2/result.json",
+    "artifacts/experiment/p2-p3-v1/p3/result.json",
+    "artifacts/experiment/p2-p3-v1/metrics.json"
+  ],
+  "claim_scope": [
+    "internal_parameter_robustness_only",
+    "porepy_method_pilot_only"
+  ]
+}
