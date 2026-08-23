@@ -87,6 +87,20 @@ class Ui_MainWindow(object):
             QPushButton#primaryScreeningButton:hover { background-color: #2d6162; }
             QPushButton#primaryScreeningButton:pressed { background-color: #264f50; }
             QPushButton#primaryScreeningButton:disabled { background-color: #9fb4b2; }
+            QPushButton#evidenceOverviewButton {
+                background-color: #f7faf9;
+                color: #315b59;
+                border: 1px solid #9fbab6;
+                border-radius: 7px;
+                padding: 9px 16px;
+                font-size: 12px;
+                font-weight: bold;
+            }
+            QPushButton#evidenceOverviewButton:hover {
+                background-color: #dfecea;
+                border-color: #6f9994;
+            }
+            QPushButton#evidenceOverviewButton:pressed { background-color: #d2e2df; }
         """)
         self.screening_banner_layout = QtWidgets.QHBoxLayout(self.screening_banner)
         self.screening_banner_layout.setContentsMargins(18, 10, 14, 10)
@@ -108,12 +122,18 @@ class Ui_MainWindow(object):
         self.screening_status_label = QtWidgets.QLabel("尚未运行")
         self.screening_status_label.setObjectName("screeningStatus")
         self.screening_status_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.btn_evidence_overview = QtWidgets.QPushButton("证据与数据状态")
+        self.btn_evidence_overview.setObjectName("evidenceOverviewButton")
+        self.btn_evidence_overview.setMinimumHeight(44)
+        self.btn_evidence_overview.setMinimumWidth(150)
+        self.btn_evidence_overview.setToolTip("查看已完成的 P2/P3 证据、主张边界和仍缺少的数据")
         self.btn_primary_screening = QtWidgets.QPushButton("生成候选勘探有利区  →")
         self.btn_primary_screening.setObjectName("primaryScreeningButton")
         self.btn_primary_screening.setMinimumHeight(44)
         self.btn_primary_screening.setMinimumWidth(235)
         self.btn_primary_screening.setToolTip("运行正式精确筛选流程；长任务可通过顶部“取消任务”停止")
         self.screening_banner_layout.addWidget(self.screening_status_label)
+        self.screening_banner_layout.addWidget(self.btn_evidence_overview)
         self.screening_banner_layout.addWidget(self.btn_primary_screening)
         self.main_vbox.addWidget(self.screening_banner)
 

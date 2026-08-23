@@ -6,11 +6,12 @@
 
 > 本系统提供的是内部数据驱动的候选区筛选结果，不直接等同于油气发现概率。接入井位、储层、产量或专家盲评数据前，外部有效性保持未验证状态。
 
-![GUI 主界面](artifacts/experiment/target-screening-mvp-v1/gui_v2_1_preview.png)
+![GUI 主界面](artifacts/experiment/target-screening-mvp-v1/gui_v2_2_preview.png)
 
 ## 核心能力
 
 - **一键正式筛选**：GUI 首屏提供醒目的“生成候选勘探有利区”入口，CLI 与 GUI 复用同一条正式管线。
+- **证据与数据状态**：GUI 和 CLI 统一读取固化的 P2/P3 产物，明确显示当前证据、主张边界以及真实同位验证仍缺少的数据。
 - **精确拓扑分析**：按时期构建断裂网格图，计算介数中心性、PageRank 和节点移除影响等指标。
 - **跨期确定性匹配**：在距离容差内执行一对一匹配，保证同一匹配单元中每个时期最多出现一个节点。
 - **透明候选评分**：综合网络关键性、节点移除影响、时期持续性和参数稳定性，不使用黑箱代理模型参与正式决策。
@@ -64,7 +65,16 @@ python -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe program\main.py
 ```
 
-在主界面确认数据源、分析时期和网格参数后，点击顶部主操作卡中的“生成候选勘探有利区”。运行结果摘要和日志位于右侧图件区下方，可按需展开或收起。
+在主界面确认数据源、分析时期和网格参数后，点击顶部主操作卡中的“生成候选勘探有利区”。“证据与数据状态”可直接查看已固化的 P2/P3 结论、结果图和数据缺口；运行结果摘要和日志位于右侧图件区下方，可按需展开或收起。
+
+也可以在不启动 GUI 的情况下检查当前证据与数据就绪状态：
+
+```powershell
+.\.venv\Scripts\python.exe scripts\check_project_readiness.py
+.\.venv\Scripts\python.exe scripts\check_project_readiness.py --json
+```
+
+检查器默认在 `program/data/raw_faults/` 中发现三期原始断裂线，并区分“网格筛选就绪”“原始线重网格化就绪”和“真实同位物理验证就绪”，不会用现有网格 CSV 替代原始断裂线。文件命名、几何和坐标要求见[原始同位数据投放合同](program/data/raw_faults/README.md)。
 
 ### 3. 使用 CLI 运行正式筛选
 
@@ -83,9 +93,7 @@ python -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
-当前合并版本的完整测试结果为：`100 passed`。
-
-当前 P2/P3 分支的完整测试结果为：`109 passed`。
+当前完整测试结果为：`115 passed`。
 
 ### 5. 运行 P2 参数不确定性
 
@@ -199,6 +207,7 @@ program/
 ├── screening_contracts.py     # 正式流程合同与异常定义
 ├── uncertainty_analysis.py    # P2 参数场景、几何覆盖与区间统计
 ├── porepy_flow_pilot.py       # P3 可选 PorePy 流动试验
+├── project_evidence.py        # P2/P3 证据卡与原始数据就绪真值源
 ├── external_validation.py     # 外部井位/标签验证接口
 ├── batch_run.py               # 批量分析与研究流程
 ├── multiperiod_overlay.py     # 多期空间叠加
@@ -212,6 +221,7 @@ scripts/
 ├── run_target_screening.py    # 正式筛选 CLI
 ├── run_uncertainty_p2.py      # P2 参数不确定性 CLI
 ├── run_porepy_p3.py           # P3 独立物理试验 CLI
+├── check_project_readiness.py # 证据与外部数据就绪检查 CLI
 ├── capture_gui_preview.py     # GUI 布局与缩放冒烟验证
 ├── run_correctness_v1.py      # 正确性审计脚本
 └── run_validation_v2.py       # 稳定性验证脚本

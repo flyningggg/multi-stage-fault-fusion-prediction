@@ -497,6 +497,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.btn_cancel_task.clicked.connect(self.cancel_running_task)
         self.btn_cancel_task.setEnabled(False)
         self.btn_primary_screening.clicked.connect(self._run_target_screening)
+        self.btn_evidence_overview.clicked.connect(self._show_project_evidence)
         self.btn_toggle_run_info.clicked.connect(self._toggle_run_info)
         self._running_task = None
 
@@ -1573,6 +1574,19 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             return
         if self.last_run_browser.toPlainText().strip():
             return
+        try:
+            from project_evidence import build_project_evidence, format_evidence_card
+
+            evidence = build_project_evidence()
+            if evidence.get("p2", {}).get("available") or evidence.get("p3", {}).get("available"):
+                self.last_run_browser.setPlainText(format_evidence_card(evidence, compact=True))
+                if evidence.get("data_readiness", {}).get("real_physics_validation_ready"):
+                    self.screening_status_label.setText("证据基线与同位数据已就绪")
+                else:
+                    self.screening_status_label.setText("证据基线已就绪 · 同位数据待补")
+                return
+        except Exception as exc:
+            self.append_text(f"【提示】项目证据摘要读取失败：{exc}\n")
         self.last_run_browser.setPlainText(
             "快速开始：点击上方“生成候选勘探有利区”运行正式流程。\n"
             "结果摘要会保留稳定候选数、证据边界与导出目录；详细进度请切换到“运行日志”。\n"
@@ -2798,6 +2812,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         menu = self.menuBar().addMenu("多时期勘探筛选")
         formal_action = menu.addAction("一键生成候选勘探有利区", self._run_target_screening)
         formal_action.setStatusTip("运行精确拓扑、多期匹配、稳健性分析并导出证据卡")
+        evidence_action = menu.addAction("查看证据与数据状态", self._show_project_evidence)
+        evidence_action.setStatusTip("读取已固化的 P2/P3 结果并检查真实同位数据是否就绪")
 
         professional_menu = menu.addMenu("专业分析与图件")
         professional_menu.addAction(
@@ -2811,6 +2827,57 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             "代理模型实验 (XGBoost→预测渗流)", self._run_multiperiod_stage4
         )
         research_action.setStatusTip("实验功能，不参与正式候选有利区评分")
+
+    def _show_project_evidence(self):
+        """展示 P2/P3 固化证据、数据缺口和现有结果图。"""
+        import matplotlib.pyplot as plt
+
+        try:
+            from project_evidence import build_project_evidence, format_evidence_card
+
+            evidence = build_project_evidence()
+            self.last_run_browser.setPlainText(format_evidence_card(evidence))
+            self.run_info_tabs.setVisible(True)
+            self.btn_toggle_run_info.setText("隐藏运行信息")
+            self.run_info_tabs.setCurrentWidget(self.run_summary_tab)
+
+            figs = []
+            captions = []
+            labels = ["P2 参数不确定性", "P3 流动方法情景"]
+            for index, path in enumerate(evidence.get("figure_paths", [])):
+                if not path or not os.path.isfile(path):
+                    continue
+                fig = plt.figure(figsize=(11, 7))
+                image = plt.imread(path)
+                plt.imshow(image)
+                plt.axis("off")
+                plt.tight_layout()
+                figs.append(fig)
+                captions.append(labels[index] if index < len(labels) else "项目证据图")
+            if figs:
+                self.embed_figure(figs, descriptions=captions)
+            plt.close("all")
+
+            readiness = evidence.get("data_readiness", {})
+            if readiness.get("real_physics_validation_ready"):
+                self.screening_status_label.setText("证据与同位数据已就绪")
+            else:
+                self.screening_status_label.setText("证据已载入 · 同位数据待补")
+            artifacts = evidence.get("artifact_paths", {})
+            self._remember_exports(
+                "项目证据与数据状态",
+                p2_result=artifacts.get("p2_result"),
+                p3_result=artifacts.get("p3_result"),
+                summary=artifacts.get("summary"),
+                claim_validation=artifacts.get("claim_validation"),
+            )
+            self.statusBar().showMessage("已载入 P2/P3 证据基线和数据就绪状态", 6000)
+        except Exception as exc:
+            QMessageBox.critical(
+                self,
+                "证据读取失败",
+                self._friendly_error_message("项目证据与数据状态", str(exc)),
+            )
 
     def _run_target_screening(self):
         """运行可解释的正式候选有利区筛选主流程。"""

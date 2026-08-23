@@ -11,6 +11,20 @@ def test_primary_screening_entry_is_visible_in_main_layout():
     assert 'self.screening_status_label = QtWidgets.QLabel("尚未运行")' in source
 
 
+def test_evidence_overview_reuses_primary_banner_and_existing_viewer():
+    demo_source = (ROOT / "program" / "demo.py").read_text(encoding="utf-8")
+    main_source = (ROOT / "program" / "main.py").read_text(encoding="utf-8")
+    assert 'self.btn_evidence_overview = QtWidgets.QPushButton("证据与数据状态")' in demo_source
+    assert "self.screening_banner_layout.addWidget(self.btn_evidence_overview)" in demo_source
+    assert "self.btn_evidence_overview.clicked.connect(self._show_project_evidence)" in main_source
+    start = main_source.index("    def _show_project_evidence(self):")
+    end = main_source.index("    def _run_target_screening(self):", start)
+    method = main_source[start:end]
+    assert "build_project_evidence" in method
+    assert "self.run_info_tabs.setCurrentWidget(self.run_summary_tab)" in method
+    assert "self.embed_figure" in method
+
+
 def test_run_summary_and_log_share_secondary_collapsible_surface():
     source = (ROOT / "program" / "demo.py").read_text(encoding="utf-8")
     assert 'self.run_info_tabs.addTab(self.run_summary_tab, "结果摘要")' in source

@@ -1,0 +1,8 @@
+# 示例只定义数据合同，不是塔里木工区实测值；请复制为 physical_properties.yaml 后替换。
+matrix_permeability_m2: null
+fracture_permeability_ratio: null
+residual_aperture_m: null
+pressure_drop_pa: null
+applicable_formation: ""
+source_reference: ""
+boundary_condition_basis: ""

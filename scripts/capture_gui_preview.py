@@ -31,13 +31,7 @@ def run() -> int:
         window.show()
         app.processEvents()
 
-        fig, ax = plt.subplots(figsize=(14, 9))
-        ax.plot([0, 1, 2, 3], [0, 1, 0.4, 1.4], color="#356f70", linewidth=3)
-        ax.scatter([0, 1, 2, 3], [0, 1, 0.4, 1.4], color="#a95757", s=70)
-        ax.set_title("图件自适应显示冒烟验证")
-        ax.grid(alpha=0.2)
-        fig.tight_layout()
-        window.embed_figure(fig, description="大尺寸图默认适应右侧可见区域，无需滚动查看全图。")
+        window._show_project_evidence()
         app.processEvents()
         window._apply_figure_view_mode()
         app.processEvents()
@@ -46,6 +40,12 @@ def run() -> int:
         viewport_size = window.canvas_scroll.viewport().size()
         checks = {
             "primary_visible": window.btn_primary_screening.isVisible(),
+            "evidence_button_visible": window.btn_evidence_overview.isVisible(),
+            "evidence_summary_truthful": all(
+                text in window.last_run_browser.toPlainText()
+                for text in ("高置信内部候选 7 个", "KB11 方法演示几何", "真实同位物理验证：待数据")
+            ),
+            "evidence_figures_loaded": len(window.current_figs) == 2,
             "run_info_visible": window.run_info_tabs.isVisible(),
             "fit_checked": window.btn_fit_fig.isChecked(),
             "canvas_within_viewport": (
@@ -67,14 +67,16 @@ def run() -> int:
         window.btn_fit_fig.setChecked(True)
         window._toggle_figure_fit()
         app.processEvents()
-        output = ROOT / "artifacts" / "experiment" / "target-screening-mvp-v1" / "gui_v2_1_preview.png"
+        output = ROOT / "artifacts" / "experiment" / "target-screening-mvp-v1" / "gui_v2_2_preview.png"
         output.parent.mkdir(parents=True, exist_ok=True)
         saved = window.grab().save(str(output))
         sys.__stdout__.write(f"GUI_PREVIEW_SAVED={saved} {output}\n")
         sys.__stdout__.write(f"GUI_CHECKS={checks}\n")
         sys.__stdout__.flush()
         return 0 if saved and all([
-            checks["primary_visible"], checks["run_info_visible"],
+            checks["primary_visible"], checks["evidence_button_visible"],
+            checks["evidence_summary_truthful"], checks["evidence_figures_loaded"],
+            checks["run_info_visible"],
             checks["fit_checked"], checks["canvas_within_viewport"],
             checks["original_mode_exceeds_viewport"],
         ]) else 1
