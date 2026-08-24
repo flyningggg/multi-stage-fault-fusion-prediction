@@ -16,6 +16,7 @@ import pandas as pd
 import yaml
 from scipy.optimize import linear_sum_assignment
 
+from artifact_paths import portable_artifact_path
 from candidate_targeting import (
     add_period_scores,
     cluster_candidate_cells,
@@ -652,7 +653,8 @@ def run_uncertainty_analysis(
         "baseline": {
             "scenario_id": "baseline", "label": "基准配置", "factor": "baseline",
             "direction": "baseline", "overrides": {}, "status": "completed",
-            "period_metrics_reused": True, "output_dir": str(baseline_dir),
+            "period_metrics_reused": True,
+            "output_dir": portable_artifact_path(baseline_dir),
             "candidate_cell_count": int(baseline_result["input_summary"].get("candidate_cell_count", 0)),
         }
     }
@@ -676,7 +678,7 @@ def run_uncertainty_analysis(
         meta = asdict(scenario)
         meta.update({
             "period_metrics_reused": bool(can_reuse),
-            "output_dir": str(scenario_output),
+            "output_dir": portable_artifact_path(scenario_output),
         })
         if scenario.factor == "grid_step_m":
             reason = (
@@ -816,7 +818,7 @@ def run_uncertainty_analysis(
         "run_id": f"p2-{datetime.now().strftime('%Y%m%d-%H%M%S')}",
         "status": status,
         "claim_scope": "internal_parameter_robustness_only",
-        "baseline_screening_dir": str(baseline_dir),
+        "baseline_screening_dir": portable_artifact_path(baseline_dir),
         "target_match_radius_m": match_radius,
         "occurrence_definition": "baseline_geometry_coverage_at_least_25_percent",
         "secondary_occurrence_definition": "baseline_geometry_coverage_at_least_50_percent",
@@ -841,11 +843,11 @@ def run_uncertainty_analysis(
             "场景范围是项目预注册工程范围，不代表所有地质解释不确定性。",
         ],
         "artifact_paths": {
-            "result_json": str(output / "result.json"),
-            "target_uncertainty_csv": str(output / "target_uncertainty.csv"),
-            "scenario_summary_csv": str(output / "scenario_summary.csv"),
-            "observations_csv": str(output / "target_scenario_observations.csv"),
-            "uncertainty_png": figure_path,
+            "result_json": portable_artifact_path(output / "result.json"),
+            "target_uncertainty_csv": portable_artifact_path(output / "target_uncertainty.csv"),
+            "scenario_summary_csv": portable_artifact_path(output / "scenario_summary.csv"),
+            "observations_csv": portable_artifact_path(output / "target_scenario_observations.csv"),
+            "uncertainty_png": portable_artifact_path(figure_path),
         },
         "runtime_seconds": float(time.perf_counter() - started),
     }
@@ -856,7 +858,7 @@ def run_uncertainty_analysis(
         "created_at": datetime.now(timezone.utc).isoformat(),
         "python": platform.python_version(),
         "platform": platform.platform(),
-        "config_path": str(Path(config_path).resolve()),
+        "config_path": portable_artifact_path(config_path),
         "scenario_contract": [asdict(s) for s in scenarios],
         "successful_scenario_ids": list(scenario_frames),
         "status": status,

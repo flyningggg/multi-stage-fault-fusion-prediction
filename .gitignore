@@ -46,9 +46,11 @@ gmsh_frac_file.*
 
 # P2/P3 regeneratable heavy intermediates
 artifacts/experiment/p2-p3-v1/p2/scenario_runs/
+artifacts/experiment/p2-p3-v2/p2/scenario_runs/
 artifacts/experiment/p2-p3-v1/p3-smoke/
 artifacts/experiment/p2-p3-v1/p3/scenarios/*/visualization/
 artifacts/experiment/p2-p3-v1/p3/scenarios/*/pressure.png
+artifacts/experiment/synthetic-recovery-v1/runs/
 
 # Large data files (optional - uncomment if needed)
 # program/*.csv

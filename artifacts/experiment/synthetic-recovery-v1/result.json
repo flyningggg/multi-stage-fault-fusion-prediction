@@ -1,0 +1,210 @@
+{
+  "run_id": "synthetic-recovery-v1",
+  "status": "completed",
+  "claim_scope": "controlled_synthetic_internal_validation_only",
+  "planned_scenario_count": 8,
+  "completed_scenario_count": 8,
+  "scenario_metrics": [
+    {
+      "scenario_id": "baseline",
+      "status": "completed",
+      "stable_target_count": 4,
+      "stable_target_hit": false,
+      "localization_error_m": 5141.9840528729765,
+      "nearest_target_rank": 1,
+      "stable_representative_hit": true,
+      "representative_localization_error_m": 3000.0,
+      "nearest_representative_rank": 3,
+      "candidate_cell_precision": 0.2647058823529412,
+      "candidate_cell_recall": 1.0,
+      "truth_core_recovered": true,
+      "predicted_clustered_cell_count": 34,
+      "truth_cell_count": 9,
+      "decoy_rejected": false,
+      "target_signature_sha256": "9bc1acc2913300c37039e962a380abdbd490e4436b1a436c9887a764905e6655",
+      "intervention": {
+        "noise": 0.03
+      }
+    },
+    {
+      "scenario_id": "baseline_repeat",
+      "status": "completed",
+      "stable_target_count": 4,
+      "stable_target_hit": false,
+      "localization_error_m": 5141.9840528729765,
+      "nearest_target_rank": 1,
+      "stable_representative_hit": true,
+      "representative_localization_error_m": 3000.0,
+      "nearest_representative_rank": 3,
+      "candidate_cell_precision": 0.2647058823529412,
+      "candidate_cell_recall": 1.0,
+      "truth_core_recovered": true,
+      "predicted_clustered_cell_count": 34,
+      "truth_cell_count": 9,
+      "decoy_rejected": false,
+      "target_signature_sha256": "9bc1acc2913300c37039e962a380abdbd490e4436b1a436c9887a764905e6655",
+      "intervention": {
+        "noise": 0.03
+      }
+    },
+    {
+      "scenario_id": "weight_noise_15",
+      "status": "completed",
+      "stable_target_count": 1,
+      "stable_target_hit": true,
+      "localization_error_m": 3804.237403504441,
+      "nearest_target_rank": 1,
+      "stable_representative_hit": true,
+      "representative_localization_error_m": 3000.0,
+      "nearest_representative_rank": 1,
+      "candidate_cell_precision": 0.28125,
+      "candidate_cell_recall": 1.0,
+      "truth_core_recovered": true,
+      "predicted_clustered_cell_count": 32,
+      "truth_cell_count": 9,
+      "decoy_rejected": true,
+      "target_signature_sha256": "4aabb01f37310fdaa8cebd43319b8a25236efcfeeb9508f8e3826d1949187fbf",
+      "intervention": {
+        "noise": 0.15
+      }
+    },
+    {
+      "scenario_id": "weight_noise_30",
+      "status": "completed",
+      "stable_target_count": 0,
+      "stable_target_hit": false,
+      "localization_error_m": null,
+      "nearest_target_rank": null,
+      "stable_representative_hit": false,
+      "representative_localization_error_m": null,
+      "nearest_representative_rank": null,
+      "candidate_cell_precision": 0.28125,
+      "candidate_cell_recall": 1.0,
+      "truth_core_recovered": true,
+      "predicted_clustered_cell_count": 32,
+      "truth_cell_count": 9,
+      "decoy_rejected": true,
+      "target_signature_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "intervention": {
+        "noise": 0.3
+      }
+    },
+    {
+      "scenario_id": "one_period_attenuated",
+      "status": "completed",
+      "stable_target_count": 2,
+      "stable_target_hit": true,
+      "localization_error_m": 2589.224137198839,
+      "nearest_target_rank": 1,
+      "stable_representative_hit": true,
+      "representative_localization_error_m": 4242.640687119285,
+      "nearest_representative_rank": 1,
+      "candidate_cell_precision": 0.25806451612903225,
+      "candidate_cell_recall": 0.8888888888888888,
+      "truth_core_recovered": true,
+      "predicted_clustered_cell_count": 31,
+      "truth_cell_count": 9,
+      "decoy_rejected": true,
+      "target_signature_sha256": "a7babfbfa9414e88b6d4070c6f59e5e4b80b12c4c5eca2b1ad18d725be80a397",
+      "intervention": {
+        "noise": 0.08,
+        "attenuated_period": 2
+      }
+    },
+    {
+      "scenario_id": "one_period_shifted",
+      "status": "completed",
+      "stable_target_count": 1,
+      "stable_target_hit": false,
+      "localization_error_m": 11672.617529928752,
+      "nearest_target_rank": 1,
+      "stable_representative_hit": false,
+      "representative_localization_error_m": 6708.203932499369,
+      "nearest_representative_rank": 1,
+      "candidate_cell_precision": 0.28125,
+      "candidate_cell_recall": 1.0,
+      "truth_core_recovered": true,
+      "predicted_clustered_cell_count": 32,
+      "truth_cell_count": 9,
+      "decoy_rejected": true,
+      "target_signature_sha256": "a4296ff6d406480ade960daae314e7be00841a1a5679802514eabbdff03b9025",
+      "intervention": {
+        "noise": 0.08,
+        "shifted_period": 2
+      }
+    },
+    {
+      "scenario_id": "single_period_decoy",
+      "status": "completed",
+      "stable_target_count": 2,
+      "stable_target_hit": true,
+      "localization_error_m": 2400.0,
+      "nearest_target_rank": 1,
+      "stable_representative_hit": true,
+      "representative_localization_error_m": 3000.0,
+      "nearest_representative_rank": 1,
+      "candidate_cell_precision": 0.23529411764705882,
+      "candidate_cell_recall": 0.8888888888888888,
+      "truth_core_recovered": true,
+      "predicted_clustered_cell_count": 34,
+      "truth_cell_count": 9,
+      "decoy_rejected": true,
+      "target_signature_sha256": "cf5f2f7f5a185bd26828fe6ad3a0596ad8bafa70f216d96bc224791797e48b71",
+      "intervention": {
+        "noise": 0.08,
+        "decoy_period": 0
+      }
+    },
+    {
+      "scenario_id": "combined_stress",
+      "status": "completed",
+      "stable_target_count": 1,
+      "stable_target_hit": false,
+      "localization_error_m": 11715.374513859982,
+      "nearest_target_rank": 1,
+      "stable_representative_hit": false,
+      "representative_localization_error_m": 8485.28137423857,
+      "nearest_representative_rank": 1,
+      "candidate_cell_precision": 0.2903225806451613,
+      "candidate_cell_recall": 1.0,
+      "truth_core_recovered": true,
+      "predicted_clustered_cell_count": 31,
+      "truth_cell_count": 9,
+      "decoy_rejected": true,
+      "target_signature_sha256": "266b24e47622b13a835adfe2935d5944f4a00181a25acf34605947aecf01870d",
+      "intervention": {
+        "noise": 0.3,
+        "shifted_period": 2,
+        "weaken_fraction": 0.15
+      }
+    }
+  ],
+  "acceptance_gates": {
+    "baseline_hit": false,
+    "deterministic_repeat": true,
+    "robustness_hit_count": 2,
+    "robustness_scenario_count": 5,
+    "robustness_required": 4,
+    "robustness_pass": false,
+    "single_period_decoy_rejected": true,
+    "diagnostic_representative_hit_count": 3,
+    "diagnostic_truth_core_recovery_count": 5,
+    "overall_pass": false
+  },
+  "claim_update": "synthetic_recovery_contract_not_fully_met",
+  "comparability": "same_pipeline_config_and_grid_contract; declared_input_perturbations_only",
+  "limitations": [
+    "本轮数据和真值均为规则网格上的人工构造，只检验算法可恢复性。",
+    "合成噪声与扰动不覆盖真实构造解释误差、测线偏差和储层非唯一性。",
+    "结果不能替代井位、储层、产量、专家盲评或同位物理模型验证。"
+  ],
+  "artifact_paths": {
+    "scenario_metrics_csv": "artifacts\\experiment\\synthetic-recovery-v1\\scenario_metrics.csv",
+    "figure_png": "artifacts\\experiment\\synthetic-recovery-v1\\maps\\synthetic_recovery.png",
+    "plan_md": "artifacts\\experiment\\synthetic-recovery-v1\\PLAN.md",
+    "report_md": "artifacts\\experiment\\synthetic-recovery-v1\\report.md",
+    "result_json": "artifacts\\experiment\\synthetic-recovery-v1\\result.json"
+  },
+  "runtime_seconds": 28.090803999977652,
+  "next_action": "inspect_failed_synthetic_slices_before_strengthening_claim"
+}

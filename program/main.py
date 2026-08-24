@@ -503,7 +503,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.btn_prev_fig.clicked.connect(self.show_prev_figure)
         self.btn_next_fig.clicked.connect(self.show_next_figure)
-        self.btn_fit_fig.clicked.connect(self._toggle_figure_fit)
+        self.combo_figure_view_mode.currentIndexChanged.connect(
+            self._apply_figure_view_mode
+        )
+        self.btn_focus_fig.toggled.connect(self._toggle_figure_focus)
+        self._figure_focus_restore = {}
+        self._figure_focus_shortcut = QtWidgets.QShortcut(
+            QtGui.QKeySequence("Esc"), self
+        )
+        self._figure_focus_shortcut.activated.connect(self._leave_figure_focus)
 
         # 2. 绑定第一排：基础地质与拓扑绘图
         self.btn_yuantu.clicked.connect(self.run_yuantu)
@@ -1838,13 +1846,48 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.current_fig_idx += 1
             self._render_current_figure()
 
-    def _toggle_figure_fit(self):
-        fit_enabled = self.btn_fit_fig.isChecked()
-        self.btn_fit_fig.setText("自适应：开" if fit_enabled else "自适应：关")
-        self._apply_figure_view_mode()
+    def _leave_figure_focus(self):
+        if hasattr(self, "btn_focus_fig") and self.btn_focus_fig.isChecked():
+            self.btn_focus_fig.setChecked(False)
+
+    def _toggle_figure_focus(self, enabled: bool):
+        """在同一查看器内切换专注模式，不复制图件或另建结果页面。"""
+        if enabled and not getattr(self, "current_figs", None):
+            self.btn_focus_fig.blockSignals(True)
+            self.btn_focus_fig.setChecked(False)
+            self.btn_focus_fig.blockSignals(False)
+            self.statusBar().showMessage("请先生成或载入一张图件", 3000)
+            return
+
+        focus_widgets = {
+            "screening_banner": self.screening_banner,
+            "left_panel": self.left_panel,
+            "tab_widget": self.tab_widget,
+            "run_info_tabs": self.run_info_tabs,
+            "btn_open_model_dir": self.btn_open_model_dir,
+            "btn_open_processed_dir": self.btn_open_processed_dir,
+            "btn_cancel_task": self.btn_cancel_task,
+            "btn_export_results": self.btn_export_results,
+            "btn_toggle_run_info": self.btn_toggle_run_info,
+        }
+        if enabled:
+            self._figure_focus_restore = {
+                name: widget.isVisible() for name, widget in focus_widgets.items()
+            }
+            for widget in focus_widgets.values():
+                widget.setVisible(False)
+            self.btn_focus_fig.setText("退出专注")
+            self.statusBar().showMessage("专注查看：Esc 退出", 3000)
+        else:
+            restore = getattr(self, "_figure_focus_restore", {})
+            for name, widget in focus_widgets.items():
+                widget.setVisible(bool(restore.get(name, True)))
+            self.btn_focus_fig.setText("专注查看")
+            self._figure_focus_restore = {}
+        QtCore.QTimer.singleShot(0, self._apply_figure_view_mode)
 
     def _apply_figure_view_mode(self):
-        """默认将当前图完整缩放进视口；原始尺寸模式才启用滚动。"""
+        """按完整、清晰、适宽或原始四种合同显示当前图件。"""
         canvas = getattr(self, "current_canvas", None)
         if canvas is None or not getattr(self, "current_figs", None):
             return
@@ -1855,25 +1898,38 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         dpi = float(self.current_fig_dpis[index])
         original_width = max(1, int(round(width_in * dpi)))
         original_height = max(1, int(round(height_in * dpi)))
-        fit_enabled = self.btn_fit_fig.isChecked()
+        mode = self.combo_figure_view_mode.currentData() or "smart"
+        viewport = self.canvas_scroll.viewport().size()
+        available_width = max(240, viewport.width() - 12)
+        caption_height = 52 if getattr(self, "_current_caption_visible", False) else 4
+        available_height = max(180, viewport.height() - caption_height - 12)
 
-        if fit_enabled:
+        if mode in {"smart", "fit", "width"}:
             self.canvas_scroll.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-            self.canvas_scroll.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-            viewport = self.canvas_scroll.viewport().size()
-            available_width = max(240, viewport.width() - 12)
-            caption_height = 52 if getattr(self, "_current_caption_visible", False) else 4
-            available_height = max(180, viewport.height() - caption_height - 12)
-            scale = min(
+            fit_scale = min(
                 available_width / float(original_width),
                 available_height / float(original_height),
             )
+            if mode == "fit":
+                scale = fit_scale
+                self.canvas_scroll.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+            elif mode == "width":
+                scale = available_width / float(original_width)
+                self.canvas_scroll.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
+            else:
+                # 比严格完整显示放大约 32%，但不超过视口宽度；在常见窗口中
+                # 仅产生少量纵向滚动，显著改善标题、图例和坐标文字的可读性。
+                scale = min(
+                    available_width / float(original_width),
+                    fit_scale * 1.32,
+                )
+                self.canvas_scroll.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
             target_width = max(240, int(original_width * scale))
             target_height = max(180, int(original_height * scale))
             canvas.setSizePolicy(
                 QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed
             )
-            canvas.setMinimumSize(0, 0)
+            canvas.setMinimumSize(target_width, target_height)
             canvas.setMaximumSize(target_width, target_height)
             canvas.resize(target_width, target_height)
         else:
@@ -1889,7 +1945,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
-        if hasattr(self, "btn_fit_fig") and self.btn_fit_fig.isChecked():
+        if hasattr(self, "combo_figure_view_mode"):
             QtCore.QTimer.singleShot(0, self._apply_figure_view_mode)
 
     def _render_current_figure(self):
@@ -2843,8 +2899,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
             figs = []
             captions = []
-            labels = ["P2 参数不确定性", "P3 流动方法情景"]
-            for index, path in enumerate(evidence.get("figure_paths", [])):
+            figure_records = evidence.get("figures") or [
+                {"path": path, "caption": "项目证据图"}
+                for path in evidence.get("figure_paths", [])
+            ]
+            for record in figure_records:
+                path = record.get("path")
                 if not path or not os.path.isfile(path):
                     continue
                 fig = plt.figure(figsize=(11, 7))
@@ -2853,7 +2913,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 plt.axis("off")
                 plt.tight_layout()
                 figs.append(fig)
-                captions.append(labels[index] if index < len(labels) else "项目证据图")
+                captions.append(str(record.get("caption") or "项目证据图"))
             if figs:
                 self.embed_figure(figs, descriptions=captions)
             plt.close("all")
@@ -2866,10 +2926,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             artifacts = evidence.get("artifact_paths", {})
             self._remember_exports(
                 "项目证据与数据状态",
+                registry=artifacts.get("registry"),
+                evidence_audit=artifacts.get("evidence_audit"),
+                screening_result=artifacts.get("screening_result"),
                 p2_result=artifacts.get("p2_result"),
                 p3_result=artifacts.get("p3_result"),
-                summary=artifacts.get("summary"),
-                claim_validation=artifacts.get("claim_validation"),
+                synthetic_result=artifacts.get("synthetic_result"),
+                cluster_followup_result=artifacts.get("cluster_followup_result"),
             )
             self.statusBar().showMessage("已载入 P2/P3 证据基线和数据就绪状态", 6000)
         except Exception as exc:

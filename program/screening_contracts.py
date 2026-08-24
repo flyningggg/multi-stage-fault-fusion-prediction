@@ -12,12 +12,17 @@ class CandidateTargetRecord:
     target_level: str
     centroid_x: float
     centroid_y: float
+    representative_x: float
+    representative_y: float
     area: float
+    diameter_m: float
     total_score: float
+    peak_score: float
     network_criticality: float
     removal_impact: float
     period_persistence: float
     parameter_stability: float
+    stable_cell_fraction: float
     supporting_periods: List[str]
     cell_count: int
     evidence_status: str

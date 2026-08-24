@@ -105,6 +105,10 @@ def test_cluster_candidate_cells_produces_stable_target_and_evidence_card():
     assert set(cells["target_id"].dropna()) == {"T001"}
     assert len(targets) == len(cards) == 1
     assert targets.iloc[0]["target_level"] == "一级"
+    assert targets.iloc[0]["representative_x"] == 0.0
+    assert targets.iloc[0]["representative_y"] == 0.0
+    assert targets.iloc[0]["diameter_m"] == 6000.0
+    assert targets.iloc[0]["stable_cell_fraction"] == 1.0
     assert cards[0]["external_validation_status"] == "not_validated"
 
 

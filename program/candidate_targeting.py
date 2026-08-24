@@ -256,10 +256,12 @@ def cluster_candidate_cells(
 
     if candidate_cells.empty:
         empty_targets = pd.DataFrame(columns=[
-            "target_id", "target_level", "centroid_x", "centroid_y", "area",
-            "total_score", "network_criticality", "removal_impact",
+            "target_id", "target_level", "centroid_x", "centroid_y",
+            "representative_x", "representative_y", "area", "diameter_m",
+            "total_score", "peak_score", "network_criticality", "removal_impact",
             "period_persistence", "parameter_stability", "supporting_periods",
-            "cell_count", "evidence_status", "recommendation_reason", "geometry",
+            "stable_cell_fraction", "cell_count", "evidence_status",
+            "recommendation_reason", "geometry",
         ])
         return candidate_cells.copy(), empty_targets, []
     coords = candidate_cells[["centroid_x", "centroid_y"]].to_numpy(dtype=float)
@@ -306,17 +308,31 @@ def cluster_candidate_cells(
         })
         geometries = [geom for geom in part.get("geometry", []) if geom is not None]
         geometry = unary_union(geometries) if geometries else None
+        part_coords = part[["centroid_x", "centroid_y"]].to_numpy(dtype=float)
+        deltas = part_coords[:, None, :] - part_coords[None, :, :]
+        diameter_m = float(np.sqrt(np.sum(deltas * deltas, axis=2)).max())
+        representative = part.sort_values(
+            ["total_score", "centroid_y", "centroid_x"],
+            ascending=[False, False, True],
+            kind="mergesort",
+        ).iloc[0]
         summaries.append({
             "_cluster": int(cluster_id),
             "centroid_x": float(part["centroid_x"].mean()),
             "centroid_y": float(part["centroid_y"].mean()),
+            "representative_x": float(representative["centroid_x"]),
+            "representative_y": float(representative["centroid_y"]),
             "area": float(getattr(geometry, "area", 0.0)) if geometry is not None else 0.0,
+            "diameter_m": diameter_m,
             "total_score": float(part["total_score"].mean()),
             "peak_score": float(part["total_score"].max()),
             "network_criticality": float(part["network_criticality"].mean()),
             "removal_impact": float(part["removal_impact"].mean()),
             "period_persistence": float(part["period_persistence"].mean()),
             "parameter_stability": float(part["parameter_stability"].mean()),
+            "stable_cell_fraction": float(
+                (part["parameter_stability"].astype(float) >= 0.80).mean()
+            ),
             "supporting_periods": "|".join(period_names),
             "cell_count": int(len(part)),
             "geometry": geometry,
@@ -344,19 +360,25 @@ def cluster_candidate_cells(
         evidence_status = "internal_supported" if is_stable else "internal_partial"
         reason = (
             f"由{row['cell_count']}个高值网格组成；支持时期为"
-            f"{row['supporting_periods']}；参数稳定率{row['parameter_stability']:.2f}。"
+            f"{row['supporting_periods']}；参数稳定率{row['parameter_stability']:.2f}；"
+            f"最高分代表点({row['representative_x']:.0f}, {row['representative_y']:.0f})。"
         )
         record = CandidateTargetRecord(
             target_id=target_id,
             target_level=level,
             centroid_x=row["centroid_x"],
             centroid_y=row["centroid_y"],
+            representative_x=row["representative_x"],
+            representative_y=row["representative_y"],
             area=row["area"],
+            diameter_m=row["diameter_m"],
             total_score=row["total_score"],
+            peak_score=row["peak_score"],
             network_criticality=row["network_criticality"],
             removal_impact=row["removal_impact"],
             period_persistence=row["period_persistence"],
             parameter_stability=row["parameter_stability"],
+            stable_cell_fraction=row["stable_cell_fraction"],
             supporting_periods=row["supporting_periods"].split("|"),
             cell_count=row["cell_count"],
             evidence_status=evidence_status,

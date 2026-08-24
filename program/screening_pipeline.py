@@ -11,7 +11,7 @@ import time
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Mapping, Optional
 
 import numpy as np
 import pandas as pd
@@ -22,6 +22,7 @@ from candidate_targeting import (
     match_period_nodes,
     select_candidate_cells,
 )
+from artifact_paths import portable_artifact_path
 from external_validation import validate_external_points
 from multiperiod_data import load_all_periods
 from percolation import (
@@ -267,7 +268,8 @@ def _plot_candidate_map(period_gdfs, candidate_cells, targets, out_path: Path) -
                     pass
             if not is_unstable:
                 ax.text(
-                    row["centroid_x"], row["centroid_y"],
+                    row.get("representative_x", row["centroid_x"]),
+                    row.get("representative_y", row["centroid_y"]),
                     f"{row['target_id']}\n{row.get('target_level', '')}",
                     fontsize=8, weight="bold", ha="center", va="center",
                     bbox={"facecolor": "white", "alpha": 0.75, "edgecolor": "none", "pad": 1.0},
@@ -295,8 +297,10 @@ def run_target_screening(
     external_points: Optional[pd.DataFrame] = None,
     progress_callback: ProgressCallback = None,
     reuse_period_metrics_from: Optional[str] = None,
+    period_gdfs_override: Optional[Mapping[str, Any]] = None,
+    input_role: str = "operational_processed_grid",
 ) -> Dict:
-    """正式候选靶区管线；不导入或调用代理模型。"""
+    """正式候选靶区管线；可注入合成数据做受控验证，不调用代理模型。"""
     started = time.perf_counter()
     output = Path(output_dir).resolve()
     output.mkdir(parents=True, exist_ok=True)
@@ -311,6 +315,14 @@ def run_target_screening(
         "未提供井位、储层或专家盲评时，外部有效性保持未验证。",
         "代理模型未参与正式评分或靶区决策。",
     ]
+    if input_role not in {"operational_processed_grid", "synthetic_controlled"}:
+        raise ValueError(f"未知输入角色: {input_role}")
+    if period_gdfs_override is not None and input_role != "synthetic_controlled":
+        raise ValueError("注入时期数据时必须显式声明 input_role='synthetic_controlled'")
+    if input_role == "synthetic_controlled":
+        limitations.append(
+            "本次输入为受控合成网络，只验证算法恢复与失败边界，不构成工区或油气有效性证据。"
+        )
 
     cfg = load_config(config_path)
     errors = validate_config(cfg)
@@ -324,7 +336,13 @@ def run_target_screening(
     top_fraction = float(screening.get("top_betweenness_fraction", 0.20))
 
     _emit(progress_callback, "加载三期数据")
-    period_gdfs = load_all_periods()
+    period_gdfs = (
+        dict(period_gdfs_override)
+        if period_gdfs_override is not None
+        else load_all_periods()
+    )
+    if len(period_gdfs) < 2:
+        raise ValueError("候选筛选至少需要两个时期的数据")
     period_frames: Dict[str, pd.DataFrame] = {}
     period_summaries = {}
     artifact_paths: Dict[str, str] = {}
@@ -469,6 +487,7 @@ def run_target_screening(
         "definition": "节点进入各距离转换Top20%的比例，按靶区候选单元取均值。",
     }
     input_summary = {
+        "input_role": input_role,
         "period_count": int(len(period_gdfs)),
         "period_grid_counts": {name: int(len(gdf)) for name, gdf in period_gdfs.items()},
         "matched_cell_count": int(len(matched)),
@@ -514,7 +533,7 @@ def run_target_screening(
         "timestamp_utc": datetime.now(timezone.utc).isoformat(),
         "python": sys.version,
         "platform": platform.platform(),
-        "config_path": str(config_used),
+        "config_path": portable_artifact_path(config_used),
         "config_hash_sha256": config_file_hash(str(config_used)) if config_used.exists() else None,
         "period_metric_config_sha256": _period_metric_config_hash(cfg),
         "distance_transforms": transforms,
@@ -522,7 +541,8 @@ def run_target_screening(
         "score_weights": score_weights,
         "elapsed_seconds": elapsed,
         "status": status,
-        "reused_period_metrics_from": str(reuse_source) if reuse_source else None,
+        "reused_period_metrics_from": portable_artifact_path(reuse_source),
+        "input_role": input_role,
     }
     manifest_path = output / "manifest.json"
     manifest_path.write_text(
@@ -557,6 +577,9 @@ def run_target_screening(
     artifact_paths["report_md"] = str(report_path)
 
     # 产物路径补写后刷新结果文件。
+    artifact_paths = {
+        key: portable_artifact_path(value) for key, value in artifact_paths.items()
+    }
     result["artifact_paths"] = artifact_paths
     result_path.write_text(
         json.dumps(_jsonable(result), ensure_ascii=False, indent=2), encoding="utf-8"

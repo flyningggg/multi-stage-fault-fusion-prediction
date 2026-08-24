@@ -6,12 +6,14 @@
 
 > 本系统提供的是内部数据驱动的候选区筛选结果，不直接等同于油气发现概率。接入井位、储层、产量或专家盲评数据前，外部有效性保持未验证状态。
 
-![GUI 主界面](artifacts/experiment/target-screening-mvp-v1/gui_v2_2_preview.png)
+![GUI 主界面](artifacts/experiment/target-screening-mvp-v2/gui_v2_3_preview.png)
 
 ## 核心能力
 
 - **一键正式筛选**：GUI 首屏提供醒目的“生成候选勘探有利区”入口，CLI 与 GUI 复用同一条正式管线。
 - **证据与数据状态**：GUI 和 CLI 统一读取固化的 P2/P3 产物，明确显示当前证据、主张边界以及真实同位验证仍缺少的数据。
+- **清晰图件查看**：默认在严格完整显示基础上适度放大，支持完整显示、适应宽度、原始尺寸与 Esc 退出的专注查看。
+- **合成真值验证**：使用预注册噪声、单期衰减、空间偏移与诱饵场景检查算法恢复和失败边界，不把合成结果包装为实测证据。
 - **精确拓扑分析**：按时期构建断裂网格图，计算介数中心性、PageRank 和节点移除影响等指标。
 - **跨期确定性匹配**：在距离容差内执行一对一匹配，保证同一匹配单元中每个时期最多出现一个节点。
 - **透明候选评分**：综合网络关键性、节点移除影响、时期持续性和参数稳定性，不使用黑箱代理模型参与正式决策。
@@ -21,7 +23,7 @@
 - **空间限径聚合**：候选单元聚合时限制区域最大直径，避免密度连接造成不合理的链式大区域。
 - **证据化导出**：输出 CSV、JSON、Markdown、PNG 和 GeoPackage，便于复核、汇报和后续 GIS 对接。
 - **专业图件保留**：继续支持原始数据图、分类图、密度热力图、方位角图、玫瑰图、三元图、拓扑关系图、关键节点图和轮廓图等分析功能。
-- **自适应图件查看**：默认按可用窗口等比例缩放图片，也可切换到原始尺寸滚动检查细节。
+- **多模式图件查看**：默认使用更易读的“清晰适配”，需要全貌、宽度优先或逐像素细查时可切换对应模式，并可进入专注查看。
 
 ## 正式筛选流程
 
@@ -65,16 +67,17 @@ python -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe program\main.py
 ```
 
-在主界面确认数据源、分析时期和网格参数后，点击顶部主操作卡中的“生成候选勘探有利区”。“证据与数据状态”可直接查看已固化的 P2/P3 结论、结果图和数据缺口；运行结果摘要和日志位于右侧图件区下方，可按需展开或收起。
+在主界面确认数据源、分析时期和网格参数后，点击顶部主操作卡中的“生成候选勘探有利区”。“证据与数据状态”可直接查看正式筛选、P2/P3、合成真值分析、结果图和数据缺口；图件默认使用“清晰适配”，可切换为完整显示、适应宽度或原始尺寸，点击“专注查看”可隐藏次要区域并用 Esc 退出。运行结果摘要和日志位于右侧图件区下方，可按需展开或收起。
 
 也可以在不启动 GUI 的情况下检查当前证据与数据就绪状态：
 
 ```powershell
 .\.venv\Scripts\python.exe scripts\check_project_readiness.py
 .\.venv\Scripts\python.exe scripts\check_project_readiness.py --json
+.\.venv\Scripts\python.exe scripts\verify_evidence_registry.py
 ```
 
-检查器默认在 `program/data/raw_faults/` 中发现三期原始断裂线，并区分“网格筛选就绪”“原始线重网格化就绪”和“真实同位物理验证就绪”，不会用现有网格 CSV 替代原始断裂线。文件命名、几何和坐标要求见[原始同位数据投放合同](program/data/raw_faults/README.md)。
+数据检查器默认在 `program/data/raw_faults/` 中发现三期原始断裂线，并区分“网格筛选就绪”“原始线重网格化就绪”和“真实同位物理验证就绪”，不会用现有网格 CSV 替代原始断裂线。证据审计器检查活动登记表、配置、P2/P3/合成边界及 SHA-256；当前结果为 15/15 项通过。文件命名、几何和坐标要求见[原始同位数据投放合同](program/data/raw_faults/README.md)。
 
 ### 3. 使用 CLI 运行正式筛选
 
@@ -93,13 +96,14 @@ python -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
-当前完整测试结果为：`115 passed`。
+当前完整测试结果为：`123 passed`。
 
 ### 5. 运行 P2 参数不确定性
 
 ```powershell
 .\.venv\Scripts\python.exe scripts\run_uncertainty_p2.py `
-  --output artifacts\experiment\p2-p3-v1\p2
+  --output artifacts\experiment\p2-p3-v2\p2 `
+  --baseline-screening-dir artifacts\experiment\target-screening-mvp-v2\final
 ```
 
 P2 默认复用已验证的基准时期指标；只有图结构或距离基准真正变化时才重算精确介数。候选“出现”按基准区被场景候选区覆盖至少 25% 判定，50% 覆盖频率同时作为更严格的补充指标。
@@ -159,23 +163,23 @@ GeoPackage 同时提供 `all_candidate_targets` 和 `stable_candidate_targets` �
 
 ## 当前验证结果
 
-仓库中的 `artifacts/experiment/target-screening-mvp-v1/final/` 保存了一次三期真实数据审计结果：
+仓库中的 `artifacts/experiment/target-screening-mvp-v2/final/` 保存当前 15 km 靶区最大直径基准的三期真实数据内部审计结果：
 
 | 指标 | 数值 |
 | --- | ---: |
 | 三期有效网格 | 9872 |
 | 跨期匹配单元 | 6392 |
 | 候选单元 | 696 |
-| 候选空间组 | 59 |
-| 稳定候选 | 9 |
-| 不稳定候选，仅供复核 | 50 |
+| 候选空间组 | 81 |
+| 稳定候选 | 18 |
+| 不稳定候选，仅供复核 | 63 |
 | 外部验证状态 | `not_validated` |
 
-上述数字用于证明管线能够在当前数据上完整运行，不应被表述为已发现 9 个油气藏或已经验证的钻探靶区。详细边界和失败修正记录见：
+上述数字用于证明管线能够在当前数据上完整运行，不应被表述为已发现 18 个油气藏或已经验证的钻探靶区。每个靶区同时导出几何质心、簇内最高分代表点、实际直径和稳定单元比例；代表点用于定位复核，不能替代靶区几何范围。旧 18 km 基准保留在 `target-screening-mvp-v1/`，没有被覆盖。
 
-- `artifacts/experiment/target-screening-mvp-v1/RUN.md`
-- `artifacts/experiment/target-screening-mvp-v1/SELF_AUDIT.md`
-- `artifacts/experiment/target-screening-mvp-v1/UI_DECISION.md`
+- `artifacts/experiment/target-screening-mvp-v2/final/result.json`
+- `artifacts/experiment/target-screening-mvp-v2/final/report.md`
+- `artifacts/experiment/evidence_registry.json`
 
 ## P2/P3 当前试验结果
 
@@ -183,19 +187,33 @@ P2 在 17 个预注册场景中完成 15 个可比场景；两个网格步长场
 
 | P2 决策分层 | 数量 | 含义 |
 | --- | ---: | --- |
-| `high_confidence_internal` | 7 | 基准稳定，且候选出现频率与稳定等级保持频率均不低于 0.80 |
-| `recurring_but_grade_sensitive` | 1 | 候选反复出现，但稳定等级对参数敏感 |
-| `conditional_internal_candidate` | 1 | 基准稳定，但几何出现频率只有 0.733 |
-| `recurring_unstable_candidate` | 50 | 空间上反复出现，但基准本身未达到内部稳定等级，仅供复核 |
+| `high_confidence_internal` | 5 | 基准稳定，且候选出现频率与稳定等级保持频率均不低于 0.80 |
+| `recurring_but_grade_sensitive` | 12 | 候选反复出现，但稳定等级对参数敏感 |
+| `conditional_internal_candidate` | 1 | 基准稳定，但几何出现频率低于稳健门槛 |
+| `recurring_unstable_candidate` | 58 | 空间上反复出现，但基准本身未达到内部稳定等级，仅供复核 |
+| `fragile_unstable_candidate` | 5 | 基准不稳定且几何出现频率低，仅保留为失败/复核证据 |
 
 P3 的 2 个流向 × 3 个裂缝/基质渗透率比情景全部完成，全局离散方程残差最大约 `1.03e-20`，两个方向的表观等效渗透率均随裂缝导流能力单调增加。高对比度情景的二维基质边界通量切片存在 0.7%–6.6% 诊断差，已保留为警告；P3 目前只支持“方法链路可运行”，不支持“候选区已获储层物理验证”。
 
 详细结果位于：
 
-- `artifacts/experiment/p2-p3-v1/p2/result.json`
-- `artifacts/experiment/p2-p3-v1/p2/target_uncertainty.csv`
+- `artifacts/experiment/p2-p3-v2/p2/result.json`
+- `artifacts/experiment/p2-p3-v2/p2/target_uncertainty.csv`
 - `artifacts/experiment/p2-p3-v1/p3/result.json`
 - `artifacts/experiment/p2-p3-v1/p3/scenario_metrics.csv`
+
+## 合成真值与失败分析
+
+没有外部井位数据时，可运行受控合成验证：
+
+```powershell
+.\.venv\Scripts\python.exe scripts\run_synthetic_validation.py
+.\.venv\Scripts\python.exe scripts\run_synthetic_cluster_followup.py
+```
+
+首轮 8 场景预注册验证没有通过全部门槛：确定性和单期诱饵拒绝通过，五个常规场景的真值核心单元恢复为 5/5，但稳定靶区几何质心只命中 2/5，最高分代表点命中 3/5。失败分析确认 18 km 聚合尺度造成基准质心偏移；随后在保持其他条件不变的 18/15/12/9 km 单因素跟进中，15 km 通过四项预设推广门槛，并在已有真实三期 P2 中保持原基准靶区召回率 1.0，候选数量增幅为 37.3%。因此当前配置收敛到 15 km；首轮失败结果仍完整保留。
+
+相关产物位于 `artifacts/experiment/synthetic-recovery-v1/`。这些结果只能支持“算法在受控网络上的恢复与失败边界分析”，不能支持真实油气预测有效性。
 
 ## 目录结构
 
@@ -204,10 +222,14 @@ program/
 ├── main.py                    # GUI 主程序
 ├── screening_pipeline.py      # 正式候选区筛选总管线
 ├── candidate_targeting.py     # 跨期匹配、评分与空间聚合
+├── artifact_paths.py          # 可移植实验产物路径标签
 ├── screening_contracts.py     # 正式流程合同与异常定义
 ├── uncertainty_analysis.py    # P2 参数场景、几何覆盖与区间统计
 ├── porepy_flow_pilot.py       # P3 可选 PorePy 流动试验
 ├── project_evidence.py        # P2/P3 证据卡与原始数据就绪真值源
+├── evidence_audit.py          # 活动证据、主张边界与SHA-256审计
+├── synthetic_validation.py    # 合成真值恢复、扰动和诱饵分析
+├── synthetic_cluster_followup.py # 靶区直径单因素失败分析
 ├── external_validation.py     # 外部井位/标签验证接口
 ├── batch_run.py               # 批量分析与研究流程
 ├── multiperiod_overlay.py     # 多期空间叠加
@@ -222,6 +244,9 @@ scripts/
 ├── run_uncertainty_p2.py      # P2 参数不确定性 CLI
 ├── run_porepy_p3.py           # P3 独立物理试验 CLI
 ├── check_project_readiness.py # 证据与外部数据就绪检查 CLI
+├── verify_evidence_registry.py # 活动证据链一致性审计 CLI
+├── run_synthetic_validation.py # 合成真值恢复 CLI
+├── run_synthetic_cluster_followup.py # 聚类直径跟进 CLI
 ├── capture_gui_preview.py     # GUI 布局与缩放冒烟验证
 ├── run_correctness_v1.py      # 正确性审计脚本
 └── run_validation_v2.py       # 稳定性验证脚本

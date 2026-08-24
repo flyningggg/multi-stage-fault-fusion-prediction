@@ -50,10 +50,16 @@ def test_task_cancellation_never_force_terminates_qthread():
     assert ".terminate()" not in cancellation
 
 
-def test_figure_viewer_defaults_to_fit_mode_without_forced_canvas_height():
+def test_figure_viewer_has_readable_multi_mode_scaling_and_focus_view():
     demo_source = (ROOT / "program" / "demo.py").read_text(encoding="utf-8")
     main_source = (ROOT / "program" / "main.py").read_text(encoding="utf-8")
-    assert "self.btn_fit_fig.setChecked(True)" in demo_source
+    assert 'self.combo_figure_view_mode.addItem("清晰适配", "smart")' in demo_source
+    assert 'self.combo_figure_view_mode.addItem("完整显示", "fit")' in demo_source
+    assert 'self.combo_figure_view_mode.addItem("适应宽度", "width")' in demo_source
+    assert 'self.combo_figure_view_mode.addItem("原始尺寸", "original")' in demo_source
+    assert 'self.btn_focus_fig = QtWidgets.QPushButton("专注查看")' in demo_source
     assert "def _apply_figure_view_mode(self):" in main_source
+    assert "fit_scale * 1.32" in main_source
+    assert "def _toggle_figure_focus(self, enabled: bool):" in main_source
     assert "ScrollBarAlwaysOff" in main_source
     assert "canvas.setMinimumHeight(int(fig.get_size_inches()[1] * fig.dpi))" not in main_source

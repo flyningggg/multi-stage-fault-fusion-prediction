@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "active": {
+    "target_screening_result": "artifacts/experiment/target-screening-mvp-v2/final/result.json",
+    "p2_result": "artifacts/experiment/p2-p3-v2/p2/result.json",
+    "p3_result": "artifacts/experiment/p2-p3-v1/p3/result.json",
+    "synthetic_recovery_result": "artifacts/experiment/synthetic-recovery-v1/result.json",
+    "cluster_followup_result": "artifacts/experiment/synthetic-recovery-v1/cluster_diameter_result.json"
+  },
+  "superseded": {
+    "target_screening_result": "artifacts/experiment/target-screening-mvp-v1/final/result.json",
+    "p2_result": "artifacts/experiment/p2-p3-v1/p2/result.json"
+  },
+  "selection_reason": "15 km target diameter passed the preregistered synthetic failure follow-up gates and retained full baseline-target recall in the existing P2 operational slice."
+}

@@ -6,7 +6,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1400, 900)
-        MainWindow.setWindowTitle("多期断裂网络勘探有利区辅助筛选系统 v2.1")
+        MainWindow.setWindowTitle("多期断裂网络勘探有利区辅助筛选系统 v2.3")
         self.centralwidget = QtWidgets.QWidget(MainWindow)
 
         # 主布局 (垂直)
@@ -583,20 +583,38 @@ class Ui_MainWindow(object):
         self.btn_prev_fig = QtWidgets.QPushButton("◀ 上一张")
         self.btn_next_fig = QtWidgets.QPushButton("下一张 ▶")
         self.lbl_fig_status = QtWidgets.QLabel("第1张/共1张")
-        self.btn_fit_fig = QtWidgets.QPushButton("自适应：开")
-        self.btn_fit_fig.setCheckable(True)
-        self.btn_fit_fig.setChecked(True)
-        self.btn_fit_fig.setMinimumWidth(96)
-        self.btn_fit_fig.setStyleSheet("""
-            QPushButton {
-                color: #405957; background: #f5f8f7; border: 1px solid #cbd8d6;
-                border-radius: 4px; padding: 4px 10px; font-size: 12px;
+        self.combo_figure_view_mode = QtWidgets.QComboBox()
+        self.combo_figure_view_mode.setObjectName("figureViewMode")
+        self.combo_figure_view_mode.addItem("清晰适配", "smart")
+        self.combo_figure_view_mode.addItem("完整显示", "fit")
+        self.combo_figure_view_mode.addItem("适应宽度", "width")
+        self.combo_figure_view_mode.addItem("原始尺寸", "original")
+        self.combo_figure_view_mode.setMinimumWidth(112)
+        self.combo_figure_view_mode.setToolTip(
+            "清晰适配会适度放大并只保留少量纵向滚动；也可完整显示、适应宽度或查看原始尺寸"
+        )
+        self.combo_figure_view_mode.setStyleSheet("""
+            QComboBox#figureViewMode {
+                color: #315b59; background: #f7faf9; border: 1px solid #9fbab6;
+                border-radius: 5px; padding: 4px 9px; font-size: 12px;
             }
-            QPushButton:checked {
+            QComboBox#figureViewMode:hover { background: #e7f0ee; }
+            QComboBox#figureViewMode::drop-down { border: none; width: 22px; }
+        """)
+        self.btn_focus_fig = QtWidgets.QPushButton("专注查看")
+        self.btn_focus_fig.setObjectName("figureFocusButton")
+        self.btn_focus_fig.setCheckable(True)
+        self.btn_focus_fig.setMinimumWidth(88)
+        self.btn_focus_fig.setToolTip("临时隐藏参数区和运行信息，让当前图件占满主窗口；Esc 可退出")
+        self.btn_focus_fig.setStyleSheet("""
+            QPushButton#figureFocusButton {
+                color: #405957; background: #f5f8f7; border: 1px solid #cbd8d6;
+                border-radius: 5px; padding: 4px 10px; font-size: 12px;
+            }
+            QPushButton#figureFocusButton:checked {
                 color: #ffffff; background: #547f7d; border-color: #547f7d;
             }
         """)
-        self.btn_fit_fig.setToolTip("默认完整显示图件；取消后按原始尺寸显示并允许滚动")
         self.lbl_fig_status.setAlignment(QtCore.Qt.AlignCenter)
 
         _gallery_btn_style = "QPushButton { font-size: 12px; padding: 4px 10px; }"
@@ -604,7 +622,8 @@ class Ui_MainWindow(object):
         self.btn_next_fig.setStyleSheet(_gallery_btn_style)
         self.lbl_fig_status.setStyleSheet("font-size: 13px; color: #2c3e50;")
 
-        self.gallery_control_layout.addWidget(self.btn_fit_fig)
+        self.gallery_control_layout.addWidget(self.combo_figure_view_mode)
+        self.gallery_control_layout.addWidget(self.btn_focus_fig)
         self.gallery_control_layout.addStretch()
         self.gallery_control_layout.addWidget(self.btn_prev_fig)
         self.gallery_control_layout.addWidget(self.lbl_fig_status)

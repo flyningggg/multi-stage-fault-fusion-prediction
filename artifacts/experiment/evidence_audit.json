@@ -1,0 +1,91 @@
+{
+  "status": "passed",
+  "generated_at_utc": "2026-08-24T03:17:44.738551+00:00",
+  "registry_path": "artifacts/experiment/evidence_registry.json",
+  "checks_passed": 15,
+  "checks_total": 15,
+  "checks": [
+    {
+      "check_id": "registry_exists",
+      "passed": true,
+      "detail": "artifacts/experiment/evidence_registry.json"
+    },
+    {
+      "check_id": "registry_schema",
+      "passed": true,
+      "detail": "schema_version=1"
+    },
+    {
+      "check_id": "active_keys_complete",
+      "passed": true,
+      "detail": "missing=[]"
+    },
+    {
+      "check_id": "active_file_target_screening_result",
+      "passed": true,
+      "detail": "artifacts/experiment/target-screening-mvp-v2/final/result.json"
+    },
+    {
+      "check_id": "active_file_p2_result",
+      "passed": true,
+      "detail": "artifacts/experiment/p2-p3-v2/p2/result.json"
+    },
+    {
+      "check_id": "active_file_p3_result",
+      "passed": true,
+      "detail": "artifacts/experiment/p2-p3-v1/p3/result.json"
+    },
+    {
+      "check_id": "active_file_synthetic_recovery_result",
+      "passed": true,
+      "detail": "artifacts/experiment/synthetic-recovery-v1/result.json"
+    },
+    {
+      "check_id": "active_file_cluster_followup_result",
+      "passed": true,
+      "detail": "artifacts/experiment/synthetic-recovery-v1/cluster_diameter_result.json"
+    },
+    {
+      "check_id": "active_config_is_15000m",
+      "passed": true,
+      "detail": "value=15000.0"
+    },
+    {
+      "check_id": "screening_is_operational_internal_only",
+      "passed": true,
+      "detail": "input_role=operational_processed_grid; external=not_validated"
+    },
+    {
+      "check_id": "p2_matches_active_baseline",
+      "passed": true,
+      "detail": "p2_count=81; screening_count=81; baseline_suffix=artifacts/experiment/target-screening-mvp-v2/final"
+    },
+    {
+      "check_id": "p2_claim_boundary",
+      "passed": true,
+      "detail": "scope=internal_parameter_robustness_only; scenarios=15"
+    },
+    {
+      "check_id": "p3_method_demo_boundary",
+      "passed": true,
+      "detail": "scope=porepy_method_pilot_only; mapping=not_validated_missing_colocated_raw_traces"
+    },
+    {
+      "check_id": "synthetic_failure_remains_visible",
+      "passed": true,
+      "detail": "claim_update=synthetic_recovery_contract_not_fully_met; overall_pass=False"
+    },
+    {
+      "check_id": "cluster_followup_supports_15000m",
+      "passed": true,
+      "detail": "gates={'baseline_15000_hit': True, 'pressure_hits_not_worse': True, 'p2_baseline_recall_one': True, 'p2_target_inflation_within_50_percent': True}"
+    }
+  ],
+  "artifact_hashes_sha256": {
+    "target_screening_result": "e0fb4c400b229ace73a0f263914334367343ef60dc0fe82b88511dd82e0df7a7",
+    "p2_result": "60430b957cb51590151e801aa5dbae37f1be88e635160d6249d5f66d5466f081",
+    "p3_result": "8b0eb8078e9b0800def98e5704a187f85b036da775c9d62580668c670ea3cec9",
+    "synthetic_recovery_result": "973cd6ff9c62daa7e3b9e1859b4543d57d5b4a3f252c37a1c85dc56ccd4ed0dd",
+    "cluster_followup_result": "08f75cbac76b6162e9782de28f1f0322be766b2e12488b0dfa264d525760a3cb"
+  }
+}

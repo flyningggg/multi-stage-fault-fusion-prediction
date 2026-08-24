@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 
 import networkx as nx
+import pytest
 
 import screening_pipeline
 from screening_pipeline import compute_node_removal_impact, run_target_screening
@@ -58,3 +59,17 @@ def test_tiny_three_period_pipeline_exports_durable_contract(tmp_path, monkeypat
     assert reused["input_summary"] == result["input_summary"]
     manifest = json.loads((reused_output / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["reused_period_metrics_from"] == str(output.resolve())
+
+
+def test_injected_period_data_requires_explicit_synthetic_role(tmp_path):
+    period_gdfs = {
+        "A期": make_grid_gdf(3, 3),
+        "B期": make_grid_gdf(3, 3),
+    }
+    config_path = Path(screening_pipeline.__file__).with_name("config.yaml")
+    with pytest.raises(ValueError, match="synthetic_controlled"):
+        run_target_screening(
+            str(tmp_path / "rejected"),
+            str(config_path),
+            period_gdfs_override=period_gdfs,
+        )

@@ -43,13 +43,24 @@ def _make_minimal_repo(tmp_path: Path) -> Path:
 
 def test_current_evidence_card_preserves_claim_boundary():
     evidence = build_project_evidence(ROOT)
-    assert evidence["p2"]["high_confidence_internal_count"] == 7
+    assert evidence["screening"]["candidate_target_count"] == 81
+    assert evidence["screening"]["stable_target_count"] == 18
+    assert evidence["screening"]["target_max_diameter_m"] == 15000.0
+    assert evidence["p2"]["high_confidence_internal_count"] == 5
     assert evidence["p2"]["statistical_scenario_count"] == 15
     assert evidence["p3"]["successful_scenario_count"] == 6
     assert evidence["p3"]["planned_scenario_count"] == 6
     assert not evidence["data_readiness"]["real_physics_validation_ready"]
+    assert not evidence["synthetic"]["overall_pass"]
+    assert evidence["synthetic"]["truth_core_recovery_count"] == 5
+    assert evidence["synthetic"]["cluster_followup_promoted_15000"]
+    assert evidence["evidence_audit"]["status"] == "passed"
+    assert evidence["evidence_audit"]["checks_passed"] == 15
+    assert len(evidence["figures"]) == 4
     card = format_evidence_card(evidence)
     assert "KB11 方法演示几何" in card
+    assert "原质心门槛未完全通过" in card
+    assert "证据链一致性：15/15 项通过" in card
     assert "不构成油气发现概率验证" in card
 
 

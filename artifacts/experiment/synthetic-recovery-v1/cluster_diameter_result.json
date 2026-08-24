@@ -1,0 +1,45 @@
+{
+  "run_id": "synthetic-cluster-diameter-followup-v1",
+  "status": "completed",
+  "parent": "synthetic-recovery-v1",
+  "claim_scope": "synthetic_failure_analysis_only",
+  "diameters_m": [
+    18000.0,
+    15000.0,
+    12000.0,
+    9000.0
+  ],
+  "scenario_ids": [
+    "baseline",
+    "weight_noise_30",
+    "one_period_shifted"
+  ],
+  "acceptance_gates": {
+    "baseline_15000_hit": true,
+    "pressure_hits_not_worse": true,
+    "p2_baseline_recall_one": true,
+    "p2_target_inflation_within_50_percent": true
+  },
+  "promote_15000_as_default": true,
+  "p2_operational_context": {
+    "available": true,
+    "path": "artifacts\\experiment\\p2-p3-v1\\p2\\scenario_summary.csv",
+    "baseline_target_count": 59,
+    "diameter_15000_target_count": 81,
+    "target_count_ratio": 1.3728813559322033,
+    "baseline_target_recall": 1.0
+  },
+  "claim_update": "supports_reducing_target_max_diameter_to_15000m",
+  "limitations": [
+    "直径跟进由合成失败触发，只能用于定位聚合偏移原因。",
+    "真实三期上下文来自既有 P2 参数场景，不是外部油气有效性证据。",
+    "12 km 与 9 km 仅作为碎片化边界，不参与默认值推广门槛。"
+  ],
+  "artifact_paths": {
+    "metrics_csv": "artifacts\\experiment\\synthetic-recovery-v1\\cluster_diameter_metrics.csv",
+    "figure_png": "artifacts\\experiment\\synthetic-recovery-v1\\maps\\cluster_diameter_followup.png",
+    "plan_md": "artifacts\\experiment\\synthetic-recovery-v1\\FOLLOWUP_PLAN.md",
+    "result_json": "artifacts\\experiment\\synthetic-recovery-v1\\cluster_diameter_result.json",
+    "report_md": "artifacts\\experiment\\synthetic-recovery-v1\\cluster_diameter_report.md"
+  }
+}

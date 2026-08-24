@@ -1,0 +1,25 @@
+{
+  "run_id": "screening-20260824-020351-c0a011cc",
+  "timestamp_utc": "2026-08-23T18:04:35.268044+00:00",
+  "python": "3.12.13 (main, Aug  7 2026, 02:26:41) [MSC v.1944 64 bit (AMD64)]",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "config_path": "program\\config.yaml",
+  "config_hash_sha256": "e02921e11a307a569c8f50cbb3e955aca1d5ecafb21b3f7550763e4ef84f8ab3",
+  "period_metric_config_sha256": "13a4c8835ba1c0a1a6595a6435c29c31cb3d40d25e539b6809985851dc258071",
+  "distance_transforms": [
+    "inverse",
+    "inverse_sqrt",
+    "neglog"
+  ],
+  "top_fraction": 0.2,
+  "score_weights": {
+    "network_criticality": 0.35,
+    "removal_impact": 0.25,
+    "period_persistence": 0.25,
+    "parameter_stability": 0.15
+  },
+  "elapsed_seconds": 43.49391610000748,
+  "status": "completed",
+  "reused_period_metrics_from": "artifacts\\experiment\\target-screening-mvp-v1\\final",
+  "input_role": "operational_processed_grid"
+}
